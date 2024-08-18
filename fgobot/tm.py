@@ -41,7 +41,8 @@ class TM:
         :param im: path to the image.
         :param name: specify the name of the image in the dict. If not given, use the filename as default.
         """
-        assert im.is_file() and im.name.endswith('.png')
+        assert im.is_file(), "cannot find your .png file"
+        assert im.name.endswith('.png'),"quest is not a png"
         name = name or im.name[:-4]
         self.images[name] = cv.imread(str(im), cv.IMREAD_COLOR)
         # self.images[name] = cv.cvtColor(self.images[name], cv.COLOR_BGR2RGB)
@@ -76,7 +77,7 @@ class TM:
         """
         self.screen = self.feed()
         logger.debug('Screen updated.')
-
+    
     def probability(self, im: str) -> float:
         """
         Return the probability of the existence of given image.
@@ -96,6 +97,7 @@ class TM:
         logger.debug('max_val = {}, max_loc = {}'.format(max_val, max_loc))
         return max_val
 
+    
     def find(self, im: str, threshold: float = None) -> Tuple[int, int]:
         """
         Find the template image on screen and return its top-left coords.
