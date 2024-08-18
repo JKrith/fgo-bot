@@ -6,22 +6,22 @@
     "h": 100
   },
   "skill": {
-    "x": 44,
-    "y": 553,
+    "x": 73,
+    "y": 573,
     "w": 50,
     "h": 50
   },
   "skill_distance": 94,
   "servant_distance": 319,
   "master_skill_menu": {
-    "x": 1170,
-    "y": 287,
+    "x": 1195,
+    "y": 312,
     "w": 50,
     "h": 50
   },
   "master_skill": {
-    "x": 882,
-    "y": 288,
+    "x": 905,
+    "y": 310,
     "w": 50,
     "h": 50
   },
@@ -33,8 +33,8 @@
     "h": 40
   },
   "choose_object": {
-    "x": 311,
-    "y": 466,
+    "x": 330,
+    "y": 390,
     "w": 50,
     "h": 50
   },
@@ -51,7 +51,8 @@
     "w": 100,
     "h": 100
   },
-  "card_distance": 256,
+  "normal_card_distance": 256,
+  "noble_card_distance":230,
   "change":{
     "x":87,
     "y":300,
@@ -60,7 +61,14 @@
   },
   "change_distance": 200,
   "swipe": {
-    "friend": [600, 602, 600, 400],
+    "friend": [600, 602, 600, 320],
     "quest": [960, 588, 960, 400]
-  }
+  },
+  "all":{
+    "x":  90,
+    "y":  126,
+    "w":  20,
+    "h":  20
+  },
+  "support_class_distance": 67
 }
