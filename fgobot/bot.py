@@ -267,10 +267,7 @@ class BattleBot:
             self.__swipe('quest')
             self.__wait(INTERVAL_SHORT)
         self.__wait(INTERVAL_SHORT * 2)
-        if self.__exists('stormbottle_use'):
-            self.__find_and_tap('quest_start', threshold=self.quest_threshold)
-            self.__wait(INTERVAL_SHORT * 2)
-
+        
     def __enter_battle(self) -> bool:
         """
         Enter the battle.
@@ -279,16 +276,24 @@ class BattleBot:
         """
         logger.info("try to select quest")
         self.__from_terminal_select_quest()
+        if self.__exists('stormbottle_use'):
+            self.__find_and_tap('quest_start', threshold=self.quest_threshold)
+            self.__wait(INTERVAL_SHORT * 2)
 
         # no enough AP
         if self.__exists('ap_paper_regen'):
             logger.info("recover_ap when paper quest")
             self.__find_and_tap('recover_ap')
+            self.__wait(INTERVAL_SHORT)
 
         if self.__exists('ap_regen'):
             logger.info("eat_apple")
             if not self.__eat_Apple():
                 return False
+            
+        if self.__exists('stormbottle_use'):
+            self.__find_and_tap('quest_start', threshold=self.quest_threshold)
+            self.__wait(INTERVAL_SHORT * 2)
         
         logger.info("try to select friend")
         self.__select_friend()
