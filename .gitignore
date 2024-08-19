@@ -42,3 +42,14 @@ m4/lt~obsolete.m4
 autom4te.cache
 
 /.idea
+
+# Folder #
+##########
+build/
+dist/
+fgo_bot.egg-info/
+
+# File used in test #
+#####################
+test_for_probability.py
+fgo-bot-master.code-workspace
