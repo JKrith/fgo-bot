@@ -1,0 +1,14 @@
+friend = ''
+if not friend:
+    print("There is no friends")
+else :
+    print("Friends exist")
+
+stage_count=4
+Q=['complete','stop']
+
+for n_loop in range(1,stage_count+1):
+    Q.append('stage_{}-{}'.format( n_loop, stage_count))
+
+for n in range(len(Q)):
+    print("{}\t".format(Q[n]))
