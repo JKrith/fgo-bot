@@ -54,8 +54,8 @@
   "normal_card_distance": 256,
   "noble_card_distance":230,
   "change":{
-    "x":87,
-    "y":300,
+    "x":137,
+    "y":348,
     "w":100,
     "h":100
   },

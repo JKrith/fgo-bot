@@ -4,7 +4,9 @@ Template matching.
 
 from typing import Callable, Union, Tuple
 from pathlib import Path
+import subprocess
 import cv2 as cv
+import re
 import numpy as np
 import logging
 from matplotlib import pyplot as plt
@@ -16,23 +18,32 @@ TM_METHOD = cv.TM_CCOEFF_NORMED
 
 
 class TM:
-    def __init__(self, feed: Callable, threshold: float = 0.85):
+    def __init__(self, feed: Callable = None, method:int = 0,\
+                 adb_path: str = 'adb', timeout: int = 15, threshold: float = 0.85):
         """
 
         :param feed: the screencap feed function
         :param threshold: the default threshold of matching.
+        :param method: methods of capturing the screen
         """
 
         self.feed = feed
 
         self.threshold = threshold
 
+        self.adb_path = adb_path
+        self.timeout = timeout
         # template image set
         self.images = {}
-        self.load_images()
+        self.load_images()    
 
         # the screencap image. Needs to be updated before matching.
+        self.method = method
         self.screen = None
+
+    # methods of capturing the screen.
+    FROM_SHELL = 0
+    SDCARD_PULL = 1
 
     def load_image(self, im: Path, name=''):
         """
@@ -75,7 +86,7 @@ class TM:
         """
         Update the screencap image from feed.
         """
-        self.screen = self.feed()
+        self.screen = self.capture(method= self.method)
         logger.debug('Screen updated.')
     
     def probability(self, im: str) -> float:
@@ -109,7 +120,6 @@ class TM:
         :return: the top-left coords of the result. Return (-1, -1) if not found.
         """
         threshold = threshold or self.threshold
-
         assert self.screen is not None
         try:
             template = self.images[im]
@@ -130,4 +140,63 @@ class TM:
         :param threshold: the threshold of matching. If not given, will be set to the default threshold.
         """
         threshold = threshold or self.threshold
+        self.update_screen()
         return self.probability(im) >= threshold
+    
+    def __run_cmd(self, cmd: list[str], raw: bool = False) -> Union[bytes, list[str]]:
+        """
+        Execute an adb command.
+        Return the raw output if the `raw` parameter is set `True`.
+        Else return the utf-8 encoded output, separated by line, as a list.
+
+        :param cmd: the command to execute, separated as a string list.
+        :param raw: whether to return the raw output
+        :return: a list of the output, utf-8 decoded, separated by line, as a list.
+        """
+        cmd = [self.adb_path] + cmd
+        logger.debug('Executing command: {}'.format(' '.join(cmd)))
+        output = subprocess.check_output(cmd, timeout=self.timeout)
+        if raw:
+            return output
+        else:
+            return output.decode('utf-8').splitlines()
+    
+    @staticmethod
+    def __png_sanitize(s: bytes) -> bytes:
+        """
+        Auto-detect and replace '\r\n' or '\r\r\n' by '\n' in the given byte string.
+
+        :param s: the string to sanitize
+        :return: the result string
+        """
+        logging.getLogger('device').debug('Sanitizing png bytes...')
+        pos1 = s.find(b'\x1a')
+        pos2 = s.find(b'\n', pos1)
+        pattern = s[pos1 + 1:pos2 + 1]
+        logging.getLogger('device').debug("Pattern detected: '{}'".format(pattern))
+        return re.sub(pattern, b'\n', s)
+
+    def capture(self, method=FROM_SHELL) -> Union[np.ndarray, None]:
+        """
+        Capture the screen.
+
+        :param method: 'FROM_SHELL' or 'SDCARD_PULL'
+
+        :return: a cv2 image as numpy ndarray
+        """
+        if method == self.FROM_SHELL:
+            logger.debug('Capturing screen from shell...')
+            img = self.__run_cmd(['shell', 'screencap -p'], raw=True)
+            img = self.__png_sanitize(img)
+            img = np.frombuffer(img, np.uint8)
+            img = cv.imdecode(img, cv.IMREAD_COLOR)
+            return img
+        elif method == self.SDCARD_PULL:
+            logger.debug('Capturing screen from sdcard pull...')
+            self.__run_cmd(['shell', 'screencap -p /sdcard/sc.png'])
+            self.__run_cmd(['pull', '/sdcard/sc.png', './sc.png'])
+            img = cv.imread('./sc.png', cv.IMREAD_COLOR)
+            return img
+        else:
+            logger.error('Unsupported screen capturing method.')
+            return None

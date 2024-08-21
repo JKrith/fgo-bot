@@ -28,14 +28,14 @@ bot = BattleBot(
     # AP策略为：当体力耗尽时，优先吃银苹果，再吃金苹果
     # 可选项为  rainbow_apple, gold_apple, silver_apple, red_copper_apple, bronze_apple
     # 如果不指定ap参数，则当体力耗尽时停止运行
-    ap=['gold_apple.png'],
+    ap=['silver_apple.png'],
 
     # 要打的关卡有3面
     stage_count=3,
 
     # 关卡图像识别的阈值为0.97
     # 如果设的过低会导致进错本，太高会导致无法进本，请根据实际情况调整
-    quest_threshold=0.95,
+    quest_threshold=0.90,
 
     # 助战图像识别的阈值为0.95
     # 如果设的过低会导致选择错误的助战，太高会导致选不到助战，请根据实际情况调整
@@ -96,4 +96,4 @@ if __name__ == '__main__':
         bot.device.connect('127.0.0.1:16384')
 
     # 启动bot，最多打5次
-    bot.run(max_loops=2)
+    bot.run(max_loops=3)

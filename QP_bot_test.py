@@ -4,19 +4,19 @@ An example of custom battle bot.
 """
 
 
-from fgobot import BattleBot
+from fgobot import bot
 import logging
 
 # 指定日志的输出等级（DEBUG / INFO / WARNING / ERROR）
 logging.basicConfig(level=logging.DEBUG)
 
 # 实例化一个bot
-bot = BattleBot(
+bot = bot.BattleBot(
 
     # 要打的关卡截图为'qp.png'，放在这个文件的同一级目录下
     quest='select_quest_test.png',
 
-    #助战的职介 all, saber, archer, lancer, rider, assassin, berserker, extra
+    #助战的职介 all / saber / archer / lancer / rider / assassin / berserker / extra
     friend_class = 'rider',
     
     # 需要的助战截图为'friend_qp.png'，放在这个文件的同一级目录下
@@ -26,9 +26,9 @@ bot = BattleBot(
     # AP策略为：当体力耗尽时，优先吃银苹果，再吃金苹果
     # 可选项为  rainbow_apple, gold_apple, silver_apple, red_copper_apple, bronze_apple
     # 如果不指定ap参数，则当体力耗尽时停止运行
-    ap=['bronze_apple'],
+    ap=['silver_apple'],
 
-    # 要打的关卡有3面
+    # 要打的关卡有3面   
     stage_count=3,
 
     # 关卡图像识别的阈值为0.97

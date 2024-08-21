@@ -6,17 +6,20 @@ import subprocess
 import logging
 import re
 import cv2 as cv
+from .tm import TM
 import numpy as np
+from pathlib import Path
 from random import randint
 from typing import List, Tuple, Union
-
+from time import sleep
 
 class Device:
     """
     A class of the android device controller that provides interface such as screenshots and clicking.
     """
 
-    def __init__(self, timeout: int = 15, adb_path: str = 'adb'):
+    def __init__(self, timeout: int = 15, adb_path: str = 'adb',\
+                  load_imgs: dict = None):
         """
 
         :param timeout: the timeout of executing commands.
@@ -30,6 +33,12 @@ class Device:
         self.timeout = timeout
 
         self.size = (1280, 720)
+
+        # Template matcher
+        self.tm = TM(method= TM.FROM_SHELL)
+
+        for n, p in load_imgs.items():
+            self.tm.load_image(name = n, im = p)
 
     def __run_cmd(self, cmd: List[str], raw: bool = False) -> Union[bytes, List[str]]:
         """
@@ -106,7 +115,7 @@ class Device:
         self.logger.error('Error message: {}'.format('\n'.join(output)))
         return False
 
-    def tap(self, x: int, y: int) -> bool:
+    def tap(self, x: int = 590, y: int = 230) -> bool:
         """
         Input a tap event at `pos`.
 
@@ -156,45 +165,58 @@ class Device:
                 return False
         self.logger.debug('Swiped from {} to {} taking {:d}ms'.format(coords0, coords1, duration))
         return True
-
-    # methods of capturing the screen.
-    FROM_SHELL = 0
-    SDCARD_PULL = 1
-
-    @staticmethod
-    def __png_sanitize(s: bytes) -> bytes:
+    
+    def exists(self, im: str, threshold: float = None) -> bool:
         """
-        Auto-detect and replace '\r\n' or '\r\r\n' by '\n' in the given byte string.
+        Check if a given image exists on screen.
 
-        :param s: the string to sanitize
-        :return: the result string
+        :param im: the name of the image
+        :param threshold: threshold of matching
         """
-        logging.getLogger('device').debug('Sanitizing png bytes...')
-        pos1 = s.find(b'\x1a')
-        pos2 = s.find(b'\n', pos1)
-        pattern = s[pos1 + 1:pos2 + 1]
-        logging.getLogger('device').debug("Pattern detected: '{}'".format(pattern))
-        return re.sub(pattern, b'\n', s)
+        self.logger.debug("Whether {} exists".format(im))
+        return self.tm.exists(im, threshold=threshold)
+    
+    def wait(self, sec: int = 1):
+        """
+        Wait some seconds and update the screen feed.
 
-    def capture(self, method=FROM_SHELL) -> Union[np.ndarray, None]:
+        :param sec: the seconds to wait
         """
-        Capture the screen.
-
-        :return: a cv2 image as numpy ndarray
+        self.logger.debug('Sleep {} seconds.'.format(sec))
+        sleep(sec)
+    
+    def wait_until(self, im: str, val: int=1) -> bool:
         """
-        if method == self.FROM_SHELL:
-            self.logger.debug('Capturing screen from shell...')
-            img = self.__run_cmd(['shell', 'screencap -p'], raw=True)
-            img = self.__png_sanitize(img)
-            img = np.frombuffer(img, np.uint8)
-            img = cv.imdecode(img, cv.IMREAD_COLOR)
-            return img
-        elif method == self.SDCARD_PULL:
-            self.logger.debug('Capturing screen from sdcard pull...')
-            self.__run_cmd(['shell', 'screencap -p /sdcard/sc.png'])
-            self.__run_cmd(['pull', '/sdcard/sc.png', './sc.png'])
-            img = cv.imread('./sc.png', cv.IMREAD_COLOR)
-            return img
+        Wait until the given image appears. Useful when try to use skills, etc.
+        """
+        self.logger.debug("Wait until image '{}' appears.".format(im))
+        
+        while not self.exists(im):
+            self.wait(val)
         else:
-            self.logger.error('Unsupported screen capturing method.')
-            return None
+            return True
+
+    def probability(self, im:str) -> float: 
+        """
+        Return the probability of the existence of given image.
+
+        :param im: the name of the image.
+        :return: the probability (confidence).
+        """
+        return self.tm.probability(im)
+    
+    def find_and_tap(self, im: str, threshold: float = None) -> bool:
+        """
+        Find the given image on screen and tap.
+
+        :param im: the name of image
+        :param threshold: the matching threshold
+        :return: whether successful
+        """
+        x, y = self.tm.find(im, threshold)
+        if (x, y) == (-1, -1):
+            self.logger.warning('Failed to find image {} on screen.'.format(im))
+            return False
+        w, h = self.tm.getsize(im)
+        return self.tap_rand(x, y, w, h)
+

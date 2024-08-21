@@ -8,7 +8,7 @@ from fgobot import BattleBot
 import logging
 
 # 指定日志的输出等级（DEBUG / INFO / WARNING / ERROR）
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # 实例化一个bot
 bot = BattleBot(
