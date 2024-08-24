@@ -6,7 +6,6 @@ import logging
 
 from functools import partial
 from typing import Dict, Any, Callable
-from .tm import TM
 from .device import Device
 import json
 from pathlib import Path
@@ -19,7 +18,7 @@ logger = logging.getLogger('bot')
 #time for waitting between operations
 INTERVAL_SHORT = 1
 INTERVAL_MID = 4
-INTERVAL_LONG = 15
+INTERVAL_LONG = 20
 
 
 class BattleBot:
@@ -69,14 +68,14 @@ class BattleBot:
         self.friend_count = len(friend)
         logger.info('Friend count is {}.'.format(self.friend_count))
 
-        #store user' s images
+        #Collect paths of user' s images and Name these paths
         user_imgs = dict()
         user_imgs['quest'] = Path(quest).absolute()
         for fid in range(self.friend_count):
             user_imgs['f_{}'.format(fid)] = Path(friend[fid]).absolute()
 
         # Device
-        self.device = Device(load_imgs= user_imgs)
+        self.device = Device(load_imgs= user_imgs, capture_method= 'FROM_SHELL')
 
         # AP strategy
         self.ap = ap
@@ -165,15 +164,15 @@ class BattleBot:
         x, y, w, h = self.__button('all')
         x += self.buttons['support_class_distance'] * ( spt_cls_index[friend_class] )
         self.device.tap(x,y)
-        
-    
+        self.device.wait_and_capture(0.5)
+
     def __select_friend(self) -> bool:
         """
         Select friend and enter team select screen 
 
         :Return True if enter successs
         """
-        self.device.wait_until("friend_pick")
+        self.device.wait_until("view_friend_party", INTERVAL_SHORT *2)
         self.__select_class(self.friend_class)
         
         friend = ''
@@ -181,39 +180,31 @@ class BattleBot:
         while not friend:
             for fid in range(self.friend_count):
                 im = 'f_{}'.format(fid)
-                if self.device.exists(im, threshold=self.friend_threshold):
+                if self.device.find_tap(im, threshold=self.friend_threshold):
                     friend = im
                     break
             if friend:
                 break
             elif swp_times >5 :
                 swp_times = 0
-                self.device.wait_until('refresh_friends')      
-                self.device.find_and_tap('refresh_friends')
+                self.device.wait_until_tap('refresh_friends')
                 self.device.wait(INTERVAL_SHORT)
-                self.device.find_and_tap('yes')
-                self.device.wait(INTERVAL_SHORT * 2) 
-                self.device.wait_until("friend_pick")
+                self.device.capture_find_tap('yes')
+                self.device.wait_until('view_friend_party')
             else:
                 swp_times += 1
                 self.__swipe('friend')
-                self.device.wait(INTERVAL_SHORT)
-        
-        self.device.find_and_tap(friend)
-
-        self.device.wait(INTERVAL_SHORT)
-        return self.device.wait_until('start_quest')
+                self.device.wait_and_capture(INTERVAL_SHORT)
     
     def __from_terminal_select_quest(self):
         """
         Select quest
 
-        :Return: True if success
+        :Return: True if success,
 
-        False if fail
+        else False
         """
-        self.device.wait_until('menu')
-        while not self.device.find_and_tap('quest', threshold=self.quest_threshold):
+        while not self.device.capture_find_tap('quest', threshold=self.quest_threshold):
             self.__swipe('quest')
             self.device.wait(INTERVAL_SHORT)
         self.device.wait(INTERVAL_SHORT * 2)
@@ -222,29 +213,52 @@ class BattleBot:
         """
         Enter the battle.
 
-        :return: whether successful.
+        :return: True if successful, else False.
         """
         logger.info("try to select quest")
         self.__from_terminal_select_quest()
-        # no enough AP
-        if self.device.exists('ap_paper_regen'):
-            logger.info("recover_ap when paper quest")
-            self.device.find_and_tap('recover_ap')
 
-        if self.device.exists('ap_close'):
-            logger.info("eat_apple")
-            if not self.__eat_Apple():
-                return False
-            
-        if self.device.exists('stormbottle_use'):
-            self.device.find_and_tap('quest_start', threshold=self.quest_threshold)
+        # Capture for 1 time, then Judge 4 cases
+        self.device.capture_screen()
+        # case 1: when enough AP enter quest except Ordeal Call
+        if self.device.exists('friend_pick'):
             self.device.wait(INTERVAL_SHORT)
+        # case 2: when enough AP enter Ordeal Call quest
+        elif self.device.find_tap('quest_start'):        
+            self.device.wait(INTERVAL_SHORT)
+
+        # case 3: no enough AP in quests except Ordeal Call
+        elif self.device.exists('ap_close'):
+            logger.info("eat Apple")
+            if self.__eat_Apple():
+                self.device.wait(INTERVAL_SHORT)
+            else:
+                logger.info('AP runs out')
+                return False
+
+        # case 4: no enough AP in Ordeal Call quests
+        elif self.device.find_tap('recover_ap'):
+            self.device.wait(INTERVAL_SHORT)
+            logger.info("eat Apple")
+            if self.__eat_Apple():
+                self.device.wait(INTERVAL_SHORT)
+                self.device.capture_find_tap('quest_start')
+                self.device.wait(INTERVAL_SHORT)
+            else:
+                logger.info('AP runs out')
+                return False
+        # fail to enter, Maybe need to check 'the arg: sec' of 'function: wait' 
+        # also check the images used to enter quest, path:./fgobot/images/ 
+        else:
+            logger.error("请检查函数'wait'的参数'sec' 和 用于识别的照片")
+            return False
         
         logger.info("try to select friend")
         self.__select_friend()
+        self.device.wait(INTERVAL_SHORT)
         
         logger.info("select team")
-        self.device.find_and_tap('start_quest')
+        self.device.wait_until_tap('start_quest')
         self.device.wait(INTERVAL_LONG)
         self.device.wait_until('attack')
         return True
@@ -252,21 +266,27 @@ class BattleBot:
     def __eat_Apple(self) -> bool:
         """
         Recover AP
-            :Return False if no ap strategy or fail to recover
+
+        :Return: False if no ap strategy or fail to recover
         """
         if not self.ap:
+            logger.error('请检查 AP 策略')
             return False
         else:
             ok = False
             for ap_item in self.ap:
-                if self.device.find_and_tap(ap_item):
+                x = self.buttons['apple'][ap_item]['x']
+                y = self.buttons['apple'][ap_item]['y']
+                if self.device.tap(x, y):
                     self.device.wait(INTERVAL_SHORT)
-                    if self.device.find_and_tap('decide'):
+                    if self.device.capture_find_tap('decide'):
+                        logger.info("Apple used")
                         ok = True
                         break
             if ok:
                 return True
             else:
+                logger.error('请检查buttons.json中的参数 和 路径./fgobot/下用于识别的图片')
                 return False
 
     def __play_battle(self) -> int:
@@ -285,48 +305,54 @@ class BattleBot:
             rounds += 1
             logger.info('At stage {}/{}, round {}, calling handler function...'
                         .format(stage, self.stage_count, rounds))
-            self.device.wait_until('attack')
 
             self.stage_handlers[stage]()
 
             while True:
-                self.device.wait(INTERVAL_MID)
-                if self.device.exists('bond') or self.device.exists('bond_up'):
-                    logger.info("'与从者的羁绊' detected. Leaving battle...")
+                if self.device.capture_and_exists('bond'):
+                    logger.info("'与从者的牵绊' detected. Leaving battle...")
                     return rounds
                 elif self.device.exists('attack'):
                     logger.info("'Attack' detected. Continuing loop...")
                     break
 
     def __end_battle(self):
-        # self.__find_and_tap('bond')
-        # self.__wait(INTERVAL_SHORT)
-        # self.__wait_until('gain_exp')
-        # self.__find_and_tap('gain_exp')
-        # self.__wait(INTERVAL_SHORT)
-        self.device.wait(INTERVAL_SHORT * 2)
-        while not self.device.exists('next_step'):
+
+        
+        while not self.device.capture_and_exists('next_step'):
             self.device.tap(590, 230)
             self.device.wait(INTERVAL_SHORT)
 
-        self.device.find_and_tap('next_step')
+        x, y = self.buttons['next_step'].values()
+        self.device.tap(x, y)
         self.device.wait(INTERVAL_SHORT * 2)
 
-        # quest first-complete reward
-        if self.device.exists('please_tap'):
-            self.device.find_and_tap('please_tap')
-            self.device.wait(INTERVAL_SHORT)
-
         # not send friend application
-        if self.device.exists('not_apply'):
-            self.device.find_and_tap('not_apply')
-        
-        # exit from quest
-        if self.device.exists('close'):
-            self.device.find_and_tap('close')
+        if self.device.capture_find_tap('not_apply'):
+            self.device.wait(INTERVAL_SHORT)
+            
+        # quit quest
+        self.device.capture_find_tap('close')
 
         self.device.wait(INTERVAL_LONG)
         self.device.wait_until('menu')
+
+    def __wait_maual_operation(self, im: str, sec: int = INTERVAL_SHORT *2):
+        """
+        waitting for manual operation, when lack proper skill object
+
+        :param im: name of image, recommend using the name of pop-up window 
+        :param sec: interval time for waitting
+        """
+        logger.info('请手动完成此技能的操作, 脚本将在操作完成后继续')
+        # disable logging output at level 'info' and lower
+        logging.disable(level=logging.INFO)
+        # wait until the pop-up window has been close
+        while self.device.capture_and_exists(im):
+            self.device.wait(sec)
+        # enable all logging output
+        logging.disable(logging.NOTSET)
+        logger.info("Resume battle")
 
     def at_stage(self, stage: int):
         """
@@ -356,29 +382,23 @@ class BattleBot:
         self.device.tap(x, y)
         self.device.wait(INTERVAL_SHORT)
 
-        if self.device.exists('choose_object'):
+        # when need to select object
+        if self.device.capture_and_exists('choose_object'):
             if obj is None:
-                logger.error('Must choose a skill object.')
-                #waitting for manual operation
-                logging.disable(level=logging.INFO)
-                while self.device.exists('choose_object'):
-                    self.device.wait()
-                logging.disable(logging.NOTSET)
-                logger.info("Resume battle")
+                logger.warning('请为 servant-{} 的技能{} 指定对象.'.format(servant, skill))
+                self.__wait_maual_operation(im= 'choose_object')
+
             else:
                 x, y, w, h = self.__button('choose_object')
                 x += self.buttons['choose_object_distance'] * (obj - 1)
                 logger.info('Chose skill object {}.'.format(obj))
                 self.device.tap(x, y)
 
-                #click for high speed skill animation
-                self.device.tap(590, 230)
-                self.device.wait(INTERVAL_SHORT)
-                self.device.wait_until('attack')
-        else:
-            self.device.tap()
-            self.device.wait(INTERVAL_SHORT)
-            self.device.wait_until('attack')
+        #when no need to select or selection is finished 
+        #click for high speed skill animation
+        self.device.tap(590, 230)
+        self.device.wait(INTERVAL_SHORT)
+        self.device.wait_until('attack')
 
     def use_master_skill(self, skill: int, obj=None, obj2=None):
         """
@@ -401,19 +421,26 @@ class BattleBot:
         logger.info('Used master skill {}'.format(skill))
         self.device.wait(INTERVAL_SHORT)
 
-        if self.device.exists('choose_object'):
+        # when need to select 1 object
+        if self.device.capture_and_exists('choose_object'):
             if obj is None:
-                logger.error('Must choose a master skill object.')
+                logger.warning('请为 master技能{} 指定一个对象.'.format(skill))
+                self.__wait_maual_operation(im= 'choose_object')
             elif 1 <= obj <= 3:
                 x, y, w, h = self.__button('choose_object')
                 x += self.buttons['choose_object_distance'] * (obj - 1)
                 self.device.tap(x, y)
                 logger.info('Chose master skill object {}.'.format(obj))
             else:
-                logger.error('Invalid master skill object.')
+                logger.warning('master技能{} 的对象不恰当.'.format(skill))
+                self.__wait_maual_operation(im= 'choose_object')
+
+        # when need to select 2 objects
         elif self.device.exists('change_disabled'):
             if obj is None or obj2 is None:
-                logger.error('Must choose two objects for Order Change.')
+                logger.warning('请为 master换人技能 指定两个对象.')
+                self.__wait_maual_operation(im= 'change_disabled')
+
             elif 1 <= obj <= 3 and 4 <= obj2 <= 6:
                 x, y, w, h = self.__button('change')
                 x += self.buttons['change_distance'] * (obj - 1)
@@ -422,15 +449,15 @@ class BattleBot:
                 x += self.buttons['change_distance'] * (obj2 - obj)
                 self.device.tap(x, y)
                 logger.info('Chose order change object ({}, {}).'.format(obj, obj2))
-
                 self.device.wait(INTERVAL_SHORT)
-                self.device.find_and_tap('change')
+                self.device.find_tap('change')
                 logger.info('Order Change')
-                #click for high speed animation
-                self.device.tap(590, 230)
             else:
-                logger.error('Invalid master skill object.')
+                logger.warning('master换人技能 的对象不恰当.')
+                self.__wait_maual_operation(im= 'change_disabled')
 
+        # when no need to select or selection is finished
+        self.device.tap(590, 230)
         self.device.wait(INTERVAL_SHORT)
         self.device.wait_until('attack')
 
@@ -445,9 +472,9 @@ class BattleBot:
         """
         assert len(cards) == 3, 'Number of cards must be 3.'
         assert len(set(cards)) == 3, 'Cards must be distinct.'
-        self.device.wait_until('attack')
 
-        self.device.find_and_tap('attack')
+        x, y, w, h = self.__button('attack')
+        self.device.tap(x, y)
         self.device.wait(INTERVAL_SHORT * 2)
         for card in cards:
             if 1 <= card <= 5:
@@ -459,7 +486,7 @@ class BattleBot:
                 x += self.buttons['noble_card_distance'] * (card - 6)
                 self.device.tap_rand(x, y, w, h)
             else:
-                logger.error('Card number must be in range [1, 8]')
+                logger.warning('Card number must be in range [1, 8]')
             self.device.wait(INTERVAL_SHORT)
         
         self.device.wait(INTERVAL_LONG)
@@ -474,7 +501,7 @@ class BattleBot:
         for n_loop in range(max_loops):
             logger.info('Entering battle...')
             if not self.__enter_battle():
-                logger.info('AP runs out. Quiting...')
+                logger.info('Quiting...')
                 break
             rounds = self.__play_battle()
             if rounds == -1:

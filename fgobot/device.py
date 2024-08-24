@@ -16,14 +16,23 @@ from time import sleep
 class Device:
     """
     A class of the android device controller that provides interface such as screenshots and clicking.
+    
+    In this class:
+
+    `tap` stand for 'click'.
+    `rand` stand for 'random'.
+    `pos` stand for 'position'
     """
 
     def __init__(self, timeout: int = 15, adb_path: str = 'adb',\
-                  load_imgs: dict = None):
+                  load_imgs: dict = None, capture_method:str = 'FROM_SHELL'):
         """
 
         :param timeout: the timeout of executing commands.
         :param adb_path: the path to the adb executable.
+        :param load_imgs: use's images need to be loaded, such as "quest" and "friend"
+        :param capture_method: options are `'FROM_SHELL'` or `'SDCARD_PULL'`, which
+                decide the way to capture screen is `from adb shell` or `from sd-card`
         """
 
         self.logger = logging.getLogger('device')
@@ -34,8 +43,8 @@ class Device:
 
         self.size = (1280, 720)
 
-        # Template matcher
-        self.tm = TM(method= TM.FROM_SHELL)
+        # Template matcher, set the method to capture screen
+        self.tm = TM(method= capture_method)
 
         for n, p in load_imgs.items():
             self.tm.load_image(name = n, im = p)
@@ -99,7 +108,7 @@ class Device:
             self.logger.info('OK device connected.')
             return True
 
-    def get_size(self) -> bool:
+    def screen_size(self) -> bool:
         """
         Get the resolution (screen size) of the device.
 
@@ -117,8 +126,10 @@ class Device:
 
     def tap(self, x: int = 590, y: int = 230) -> bool:
         """
-        Input a tap event at `pos`.
+        Input a tap event at `pos:(x, y)`.
 
+        `(590, 230)` is the cetre of screen.
+        
         :param x: the x coord in pixels.
         :param y: the y coord in pixels.
         :return: whether the event is successful.
@@ -135,7 +146,9 @@ class Device:
 
     def tap_rand(self, x: int, y: int, w: int, h: int) -> bool:
         """
-
+         Input a tap event at `random pos` in rectangular area:
+        `(x, y)` and `(x+w, y+h)`
+        
         :param x: the top x coord in pixels.
         :param y: the left y coord in pixels.
         :param w: the width in pixels.
@@ -166,6 +179,15 @@ class Device:
         self.logger.debug('Swiped from {} to {} taking {:d}ms'.format(coords0, coords1, duration))
         return True
     
+    def capture_and_exists(self, im: str, threshold: float = None) -> bool:
+        """
+        Capture screen, Check if a given image exists on screen.
+
+        :param im: the name of the image
+        :param threshold: threshold of matching
+        """
+        return self.tm.capture_and_exists(im, threshold=threshold)
+    
     def exists(self, im: str, threshold: float = None) -> bool:
         """
         Check if a given image exists on screen.
@@ -173,50 +195,117 @@ class Device:
         :param im: the name of the image
         :param threshold: threshold of matching
         """
-        self.logger.debug("Whether {} exists".format(im))
-        return self.tm.exists(im, threshold=threshold)
+        return self.tm.capture_and_match(img= im, threshold= threshold, mode= self.tm.EXSTMODE,\
+                                         doCapture= False)
     
     def wait(self, sec: int = 1):
         """
-        Wait some seconds and update the screen feed.
+        Wait some seconds 
 
         :param sec: the seconds to wait
         """
         self.logger.debug('Sleep {} seconds.'.format(sec))
         sleep(sec)
-    
-    def wait_until(self, im: str, val: int=1) -> bool:
+
+    def wait_and_capture(self, sec:int = 1):
         """
-        Wait until the given image appears. Useful when try to use skills, etc.
+        Wait some seconds, then Capture screen
+
+        :param sec: the seconds to wait
+        """
+        self.logger.debug('Sleep {} seconds.'.format(sec))
+        sleep(sec)
+        self.capture_screen()
+    
+    def wait_until(self, im: str, sec: int=1) -> bool:
+        """
+        Wait and Update screen until the given image appears. 
+        
+        Useful when try to use skills, etc.
+        
+        :param im: the name of image
+        :param sec: the seconds to wait
         """
         self.logger.debug("Wait until image '{}' appears.".format(im))
-        
-        while not self.exists(im):
-            self.wait(val)
+
+        while not self.capture_and_exists(im):
+            self.wait(sec)
         else:
             return True
+    
+    def wait_until_tap(self, im: str, sec: int=1, threshold: float = 0.85) -> bool:
+        """
+        Wait, Update screen until the given image appears and Tap.
 
-    def probability(self, im:str) -> float: 
+        :param im: the name of image
+        :param sec: the seconds to wait
+        """
+        self.logger.debug("Wait until image '{}' appears.".format(im))
+        prob = 0
+        x, y = 0, 0
+        while prob < threshold :
+            prob, loc = self.tm.capture_and_match(img= im, mode= self.tm.ALLMODE)
+            self.wait(sec)
+        else:
+            x = loc[0]
+            y = loc[1]
+            return self.tap(x, y)
+
+    def capture_and_probability(self, im:str) -> float: 
+        """
+        Capture screen, Return the probability of the existence of given image.
+
+        :param im: the name of the image.
+        :return: the probability (confidence).
+        """
+        return self.tm.capture_and_probability(im)
+    
+    def probability(self, im:str) -> float:
         """
         Return the probability of the existence of given image.
 
         :param im: the name of the image.
         :return: the probability (confidence).
         """
-        return self.tm.probability(im)
+        return self.tm.capture_and_match(img= im, mode= self.tm.PROBMODE, doCapture= False)
     
-    def find_and_tap(self, im: str, threshold: float = None) -> bool:
+    def capture_find_tap(self, im: str, threshold: float = None) -> bool:
         """
-        Find the given image on screen and tap.
+        Capture screen, Find the given image on screencap, Tap on screen if found.
 
         :param im: the name of image
         :param threshold: the matching threshold
-        :return: whether successful
+        :return: whether click
         """
-        x, y = self.tm.find(im, threshold)
+        x, y = self.tm.capture_and_find(im, threshold)
         if (x, y) == (-1, -1):
             self.logger.warning('Failed to find image {} on screen.'.format(im))
             return False
         w, h = self.tm.getsize(im)
+        self.logger.debug('find and tap image {}'.format(im))
+        return self.tap_rand(x, y, w, h)
+    
+    def find_tap(self, im: str, threshold: float = None) -> bool:
+        """
+        Find the given image on screencap, Tap on screen if found.
+
+        :param im: the name of image
+        :param threshold: the matching threshold
+        :return: if `im` found, Tap it and Return `True`,
+
+                    else Don't tap and Return `False`  
+        """
+        x,y = self.tm.capture_and_match(img= im, threshold= threshold, 
+                                        mode= self.tm.FINDMODE, doCapture= False)
+        if (x, y) == (-1, -1):
+            self.logger.warning('Failed to find image {} on screen.'.format(im))
+            return False
+        w, h = self.tm.getsize(im)
+        self.logger.debug('find and tap image {}'.format(im))
         return self.tap_rand(x, y, w, h)
 
+    def capture_screen(self):
+        """
+        Capture the screen image.
+        """
+        self.tm.capture_screen()

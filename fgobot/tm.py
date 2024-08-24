@@ -18,19 +18,16 @@ TM_METHOD = cv.TM_CCOEFF_NORMED
 
 
 class TM:
-    def __init__(self, feed: Callable = None, method:int = 0,\
+    def __init__(self, method:str = 'FROM_SHELL',\
                  adb_path: str = 'adb', timeout: int = 15, threshold: float = 0.85):
         """
-
-        :param feed: the screencap feed function
+        :param timeout: the timeout of executing commands.
+        :param adb_path: the path to the adb executable.
         :param threshold: the default threshold of matching.
         :param method: methods of capturing the screen
         """
 
-        self.feed = feed
-
         self.threshold = threshold
-
         self.adb_path = adb_path
         self.timeout = timeout
         # template image set
@@ -40,10 +37,6 @@ class TM:
         # the screencap image. Needs to be updated before matching.
         self.method = method
         self.screen = None
-
-    # methods of capturing the screen.
-    FROM_SHELL = 0
-    SDCARD_PULL = 1
 
     def load_image(self, im: Path, name=''):
         """
@@ -82,36 +75,72 @@ class TM:
         h, w, _ = self.images[im].shape
         return w, h
 
-    def update_screen(self):
+    def capture_screen(self):
         """
-        Update the screencap image from feed.
+        Capture the screen image.
         """
         self.screen = self.capture(method= self.method)
-        logger.debug('Screen updated.')
-    
-    def probability(self, im: str) -> float:
+        logger.debug('Screen captured.')
+
+    PROBMODE = 0
+    EXSTMODE = 1
+    FINDMODE = 2
+    ALLMODE  = 3
+    def capture_and_match(self, img:str, threshold: float = None, mode: int = PROBMODE,\
+                          doCapture: bool = True):
         """
-        Return the probability of the existence of given image.
+        Capture the screen, match `img` with screen.
+        
+        :param img: the name of img
+        :param threshold: the threshold of matching. If not given, will be set to the default threshold
+        :param mode: select `PROBMODE` to return `match-value`, 
+                    `FINDMODE` to return `match-location`,      
+                    `EXSTMODE` to check if img exists, 
+                    `ALLMODE` to return `match-value`, `match-location`
+        :param doCapture: Whether Capture the screen before Match
+        :return: match-value or match-location or whether exists
+        """
+        threshold = threshold or self.threshold
+        if doCapture:
+            self.capture_screen()
+        try:
+            template = self.images[img]
+        except KeyError:
+            logger.error('Unexpected image name {}'.format(img))
+            if mode == self.PROBMODE :
+                return 0
+            elif mode == self.EXSTMODE:
+                return None
+            elif mode == self.FINDMODE:
+                return -1, -1
+            elif mode == self.ALLMODE:
+                return 0, -1, -1
+        
+        res = cv.matchTemplate(self.screen, template, TM_METHOD)
+        _, max_val, _, max_loc = cv.minMaxLoc(res)
+        logger.debug('max_val = {}, max_loc = {}'.format(max_val, max_loc))
+        
+        if mode == self.PROBMODE:
+            return max_val
+        elif mode == self.EXSTMODE:
+            return True if max_val >= threshold else False
+        elif mode == self.FINDMODE:
+            return max_loc if max_val >= threshold else (-1, -1)
+        elif mode == self.ALLMODE:
+            return max_val, max_loc
+    
+    def capture_and_probability(self, im: str) -> float:
+        """
+        Capture screen, Return the probability of the existence of given image.
 
         :param im: the name of the image.
         :return: the probability (confidence).
         """
-        assert self.screen is not None
-        try:
-            template = self.images[im]
-        except KeyError:
-            logger.error('Unexpected image name {}'.format(im))
-            return 0.0
-
-        res = cv.matchTemplate(self.screen, template, TM_METHOD)
-        _, max_val, _, max_loc = cv.minMaxLoc(res)
-        logger.debug('max_val = {}, max_loc = {}'.format(max_val, max_loc))
-        return max_val
-
+        return self.capture_and_match(img= im, mode= self.PROBMODE)
     
-    def find(self, im: str, threshold: float = None) -> Tuple[int, int]:
+    def capture_and_find(self, im: str, threshold: float) -> Tuple[int, int]:
         """
-        Find the template image on screen and return its top-left coords.
+        Capture screen, Find the template image on screen and return its top-left coords.
 
         Return None if the matching value is less than `threshold`.
 
@@ -120,28 +149,18 @@ class TM:
         :return: the top-left coords of the result. Return (-1, -1) if not found.
         """
         threshold = threshold or self.threshold
-        assert self.screen is not None
-        try:
-            template = self.images[im]
-        except KeyError:
-            logger.error('Unexpected image name {}'.format(im))
-            return -1, -1
+        return self.capture_and_match(img= im, threshold= threshold, mode= self.FINDMODE)
 
-        res = cv.matchTemplate(self.screen, template, TM_METHOD)
-        _, max_val, _, max_loc = cv.minMaxLoc(res)
-        logger.debug('max_val = {}, max_loc = {}'.format(max_val, max_loc))
-        return max_loc if max_val >= threshold else (-1, -1)
-
-    def exists(self, im: str, threshold: float = None) -> bool:
+    def capture_and_exists(self, im: str, threshold: float) -> bool:
         """
-        Check if a given image exists on screen.
+        Capture screen, Check if a given image exists on screen.
 
         :param im: the name of the image
         :param threshold: the threshold of matching. If not given, will be set to the default threshold.
         """
         threshold = threshold or self.threshold
-        self.update_screen()
-        return self.probability(im) >= threshold
+        logger.debug("Whether {} exists".format(im))
+        return self.capture_and_match(img= im, mode= self.EXSTMODE, threshold= threshold)
     
     def __run_cmd(self, cmd: list[str], raw: bool = False) -> Union[bytes, list[str]]:
         """
@@ -160,7 +179,7 @@ class TM:
             return output
         else:
             return output.decode('utf-8').splitlines()
-    
+        
     @staticmethod
     def __png_sanitize(s: bytes) -> bytes:
         """
@@ -176,7 +195,7 @@ class TM:
         logging.getLogger('device').debug("Pattern detected: '{}'".format(pattern))
         return re.sub(pattern, b'\n', s)
 
-    def capture(self, method=FROM_SHELL) -> Union[np.ndarray, None]:
+    def capture(self, method='FROM_SHELL') -> Union[np.ndarray, None]:
         """
         Capture the screen.
 
@@ -184,16 +203,16 @@ class TM:
 
         :return: a cv2 image as numpy ndarray
         """
-        if method == self.FROM_SHELL:
+        if method == 'FROM_SHELL':
             logger.debug('Capturing screen from shell...')
             img = self.__run_cmd(['shell', 'screencap -p'], raw=True)
             img = self.__png_sanitize(img)
             img = np.frombuffer(img, np.uint8)
             img = cv.imdecode(img, cv.IMREAD_COLOR)
             return img
-        elif method == self.SDCARD_PULL:
+        elif method == 'SDCARD_PULL':
             logger.debug('Capturing screen from sdcard pull...')
-            self.__run_cmd(['shell', 'screencap -p /sdcard/sc.png'])
+            self.__run_cmd(['shell', 'screen -p /sdcard/sc.png'])
             self.__run_cmd(['pull', '/sdcard/sc.png', './sc.png'])
             img = cv.imread('./sc.png', cv.IMREAD_COLOR)
             return img

@@ -18,7 +18,7 @@ bot = BattleBot(
     friend=['Oberon.png'],
 
     # AP策略为：当体力耗尽时，优先吃银苹果，再吃金苹果
-    # 可选项为  rainbow_apple, gold_apple, silver_apple, red_copper_apple, bronze_apple
+    # 可选项为  rainbow_apple, gold_apple, silver_apple
     # 如果不指定ap参数，则当体力耗尽时停止运行
     ap=['silver_apple'],
 

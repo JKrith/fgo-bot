@@ -48,7 +48,7 @@ autom4te.cache
 build/
 dist/
 fgo_bot.egg-info/
-/fgobot/__pycache__/
+fgobot/__pycache__/
 /test
 
 # File used in test #
