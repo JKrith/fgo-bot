@@ -1,11 +1,11 @@
-from fgobot import BattleBot
+from fgobot import bot
 import logging
 
 # 指定日志的输出等级（DEBUG / INFO / WARNING / ERROR）
 logging.basicConfig(level=logging.DEBUG)
 
 # 实例化一个bot
-bot = BattleBot(
+bot = bot.BattleBot(
 
     # 要打的关卡截图为'qp.png'，放在这个文件的同一级目录下
     quest='Samaa_level85.png',

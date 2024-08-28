@@ -49,11 +49,4 @@ build/
 dist/
 fgo_bot.egg-info/
 fgobot/__pycache__/
-/test
 
-# File used in test #
-#####################
-test_for_probability.py
-fgo-bot-master.code-workspace
-/QP_bot_test.py
-/QP_paper_bot.py

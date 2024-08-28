@@ -82,6 +82,14 @@ python3 setup.py install
 
 ## 更新日志
 
+### 2024.8.28	
+
+1. 现在脚本会单击“连续出击”来跳过选择关卡和选择编队
+2. 架构调整，将原`device.py` 和`tm.py`两个模块合并为新`device.py`，原模块`bot.py`中的部分函数定义移入新`device.py`，增加了一些函数。同时，对原有函数做了以下调整：
+   - 原`__wait()`函数重命名为`wait_and_capture()`，定义不变。新`wait()`函数的定义不同于原`__wait()`函数
+   - `find()`和`probability()`合并为`match()`
+   - 常量`FROM_SHELL`和`SDCARD_PULL`移到模块最外层
+
 ### 2024.8.18	在Github建立仓库
 
 - 现在脚本使用技能后自动单击屏幕，加速动画播放
