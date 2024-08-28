@@ -180,8 +180,11 @@ class BattleBot:
         while not friend:
             for fid in range(self.friend_count):
                 im = 'f_{}'.format(fid)
+                logging.disable(logging.WARNING)
+                
                 if self.device.find_and_tap(im, threshold=self.friend_threshold):
                     friend = im
+                    logging.disable(logging.NOTSET)
                     break
             if friend:
                 break
@@ -208,7 +211,7 @@ class BattleBot:
         while not self.device.find_and_tap('quest', threshold=self.quest_threshold):
             self.__swipe('quest')
             self.device.wait_and_capture(INTERVAL_SHORT)
-        self.device.wait_and_capture(INTERVAL_SHORT * 2)
+        self.device.wait_and_capture(INTERVAL_MID)
 
     def __enter_battle(self, battle_count: int) -> bool:
         """
