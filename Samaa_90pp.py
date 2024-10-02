@@ -44,7 +44,7 @@ bot = bot.BattleBot(
 # 为了方便，使用了简写
 s = bot.use_skill
 m = bot.use_master_skill
-a = bot.attack_old
+a = bot.attack
 
 # 编队 
 Molgan = 1
@@ -57,6 +57,7 @@ def stage_1():
     
     # s(1, 2)表示使用1号从者的技能2
     s(Kuroe, 1)
+    s(Kuroe, 2, Alcas)
     s(Kuroe, 3 )
     # 换人  
     m(3, 3, 4)
@@ -99,4 +100,4 @@ if __name__ == '__main__':
         bot.device.connect('127.0.0.1:16384')
 
     # 启动bot，最多打5次
-    bot.run(max_loops=15)
+    bot.run(max_loops=5)

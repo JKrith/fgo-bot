@@ -19,7 +19,7 @@ bot = bot.BattleBot(
     quest='select_paper_quest.png',
 
     #助战的职介 all, saber, archer, lancer, rider, assassin, berserker, extra
-    friend_class = bot.RIDER,
+    friend_class = 'rider',
 
     # 需要的助战截图为'friend_qp.png'，放在这个文件的同一级目录下
     # 如果可以接受的助战有多个，可以传入一个list，例如：friend=['friend1.png', 'friend2.png]
@@ -46,7 +46,7 @@ bot = bot.BattleBot(
 # 为了方便，使用了简写
 s = bot.use_skill
 m = bot.use_master_skill
-a = bot.attack_old
+a = bot.attack
 
 # 编队 道满 尼托克丽丝 Arc
 Douman = 1

@@ -49,11 +49,4 @@ build/
 dist/
 fgo_bot.egg-info/
 fgobot/__pycache__/
-/QP_bot/
-/QP_paper_bot/
-/Samaa_level85
-/.vscode
-# File #
-########
-/desktop.ini
 
