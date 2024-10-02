@@ -1,5 +1,5 @@
 { "apple":{
-  "rainbow_apple":{
+    "rainbow_apple":{
       "x":375,
       "y":180
     },
@@ -44,10 +44,10 @@
   },
   "master_skill_distance": 90,
   "refresh_friends": {
-    "x": 798,
-    "y": 110,
-    "w": 80,
-    "h": 40
+    "x": 930,
+    "y": 128,
+    "w": 30,
+    "h": 30
   },
   "choose_object": {
     "x": 330,
@@ -56,6 +56,11 @@
     "h": 50
   },
   "choose_object_distance": 318,
+  
+  "skill_reinforce":{
+    "yes": [961, 426],
+    "no": [644, 423]
+  },
   "card":{
     "x": 77,
     "y": 433,
