@@ -304,7 +304,7 @@ class Device:
         
         return max_val, max_loc
     
-    def capture_and_exists(self, im: str, threshold: float = None) -> bool:
+    def updateScreen_and_exists(self, im: str, threshold: float = None) -> bool:
         """
         Capture screen, Check if a given image exists on screen.
 
@@ -338,7 +338,7 @@ class Device:
         self.logger.debug('Sleep {} seconds.'.format(sec))
         sleep(sec)
 
-    def wait_and_capture(self, sec:int = 1):
+    def wait_and_updateScreen(self, sec:int = 1):
         """
         Wait some seconds, then Capture screen
 
@@ -348,7 +348,7 @@ class Device:
         sleep(sec)
         self.update_screen()
     
-    def wait_until(self, im: str, sec: int=1, threshold: float = None) -> bool:
+    def wait_until(self, im: str, sec: int=1, threshold: float = None, countLimit: int = None) -> bool:
         """
         Wait and Update screen until the given image appears. 
         
@@ -362,11 +362,19 @@ class Device:
         """
         self.logger.debug("Wait until image '{}' appears.".format(im))
         threshold = self.threshold or threshold
-        while not self.capture_and_exists(im, threshold):
-            self.wait(sec)
+        if countLimit is None:
+            while not self.updateScreen_and_exists(im, threshold):
+                self.wait(sec)
+            else:
+                return True
         else:
-            return True
-    
+            while countLimit:
+                if self.updateScreen_and_exists(im, threshold):
+                    return True
+                self.wait(sec)
+                countLimit = countLimit - 1
+            else:
+                return False
     def wait_until_tap(self, im: str, sec: int=1, threshold: float = None) -> bool:
         """
         Wait, Update screen until the given image appears and Tap.

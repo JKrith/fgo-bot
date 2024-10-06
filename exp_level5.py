@@ -10,6 +10,10 @@ import logging
 # 指定日志的输出等级（DEBUG / INFO / WARNING / ERROR）
 logging.basicConfig(level=logging.DEBUG)
 
+# 覆盖默认的 INTERVAL，单位为 秒 
+# 如果设备配置低，游戏加载时间长，脚本可能会跳bug。在下面的代码中增加 INTERVAL_MID的值，可以解决此问题
+bot.INTERVAL_MID = 7
+
 # 实例化一个bot
 bot = bot.BattleBot(
 
@@ -98,4 +102,4 @@ if __name__ == '__main__':
         bot.device.connect('127.0.0.1:16384')
 
     # 启动bot，最多打5次
-    bot.run(max_loops=15)
+    bot.run(max_loops=5)

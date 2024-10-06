@@ -12,6 +12,19 @@
       "y":480
     }
   },
+  "all":{
+    "x":  90,
+    "y":  126
+  },
+  "support_class_distance": 67,
+  "refresh_friends": {
+    "x": 930,
+    "y": 128
+  },
+  "refresh_friends_yes":{
+    "x":846,
+    "y":560
+  },
   "attack": {
     "x": 1135,
     "y": 600,
@@ -43,12 +56,6 @@
     "h": 50
   },
   "master_skill_distance": 90,
-  "refresh_friends": {
-    "x": 930,
-    "y": 128,
-    "w": 30,
-    "h": 30
-  },
   "choose_object": {
     "x": 330,
     "y": 390,
@@ -85,12 +92,5 @@
   "swipe": {
     "friend": [600, 602, 600, 320],
     "quest": [960, 588, 960, 400]
-  },
-  "all":{
-    "x":  90,
-    "y":  126,
-    "w":  20,
-    "h":  20
-  },
-  "support_class_distance": 67
+  }
 }

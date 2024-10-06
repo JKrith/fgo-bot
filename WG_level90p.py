@@ -9,7 +9,11 @@ import logging
 
 # 指定日志的输出等级（DEBUG / INFO / WARNING / ERROR）
 # 建议日常使用时设 INFO，需要debug时设 DEBUG
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
+
+# 覆盖默认的 INTERVAL，单位为 秒 
+# 如果设备配置低，游戏加载时间长，脚本可能会跳bug。在下面的代码中增加 INTERVAL_MID的值，可能解决此问题
+bot.INTERVAL_MID = 10
 
 # 实例化一个 bot.BattleBot
 insBot = bot.BattleBot(
