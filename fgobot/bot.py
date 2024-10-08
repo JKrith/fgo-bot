@@ -261,7 +261,7 @@ class BattleBot:
             return False
         
         logger.info("try to select friend")
-        self.device.wait(INTERVAL_SHORT /2)
+        self.device.wait(INTERVAL_SHORT)
         if battle_count == 0:
             self.__select_class(self.friend_class)
         
@@ -414,14 +414,15 @@ class BattleBot:
             self.xjbd_handlers[stage] = f
         return decorator
 
-    def use_skill(self, servant: int, skill: int, obj=None, ReinforceEnable: bool = False,\
-                  ReinforceOrNot: bool = False):
+    def use_skill(self, servant: int, skill: int, obj=None, \
+                  reinforceOrNot: bool = None):
         """
         Use a skill.
 
         :param servant: the servant id.
         :param skill: the skill id.
         :param obj: the object of skill, if required.
+        :param reinfoceOrNot: whether reinforce skill or not.
         """
         x, y, w, h = self.__button('skill')
         x += self.buttons['servant_distance'] * (servant - 1)
@@ -431,8 +432,8 @@ class BattleBot:
         self.device.wait(INTERVAL_SHORT)
         
         # for special skill, for example, KuKulcan
-        if ReinforceEnable:
-            if ReinforceOrNot:
+        if reinforceOrNot is not None:
+            if reinforceOrNot:
                 pos = self.buttons['skill_reinforce']['yes']
                 self.device.tap(pos[0], pos[1])
             else:
@@ -457,18 +458,6 @@ class BattleBot:
         self.device.tap(590, 230)
         self.device.wait(INTERVAL_SHORT)
         self.device.wait_until('attack')
-    
-    def use_skill_special(self, servant: int, skill: int, obj= None, ReinforceOrNot: bool = True ):
-        """
-        Use a Kukulcan's skill. 
-
-        :param servant: the servant id.
-        :param skill: the skill id.
-        :param obj: the object of skill, if required.
-        :param ReinforceOrNot: whether consume stars to reinforce
-        """
-        self.use_skill(servant= servant, skill= skill, obj= obj, ReinforceEnable= True, \
-                       ReinforceOrNot= ReinforceOrNot)
 
     def use_master_skill(self, skill: int, obj=None, obj2=None):
         """
@@ -576,7 +565,7 @@ class BattleBot:
 
         x, y, _, _ = self.__button('attack')
         self.device.tap(x, y)
-        self.device.wait_and_updateScreen(INTERVAL_SHORT * 2)
+        self.device.wait_until('battleBack')
 
         self.__unselected_NormalCards = {
                 0 : True,

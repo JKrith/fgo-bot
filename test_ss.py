@@ -45,7 +45,7 @@ bot = bot.BattleBot(
 s = bot.use_skill
 m = bot.use_master_skill
 a = bot.attack_old
-ss = bot.use_skill_special
+ss = bot.use_skill_reinforce
 
 # 编队 
 Arc = 2
@@ -58,8 +58,8 @@ def stage_1():
     
     # s(1, 2)表示使用1号从者的技能2
     s(Kyskp, 2, 3)
-    ss(Kkrk, 1, ReinforceOrNot= True)
-    ss(Kkrk, 3, ReinforceOrNot= False)
+    ss(Kkrk, 1, reinforceOrNot= True)
+    ss(Kkrk, 3, reinforceOrNot= False)
     # (a[6, 1, 2])表示出卡顺序为：6号卡（1号从者宝具卡），1号卡，2号卡
     a([3, 1, 2])
 
@@ -68,7 +68,7 @@ def stage_1():
 def stage_2():
     
     # m(2, 1)表示使用御主技能2，对象为1号从者
-    ss(Kkrk, 2, 1, ReinforceOrNot= True)
+    ss(Kkrk, 2, 1, reinforceOrNot= True)
 
     a([3, 1, 2])
 

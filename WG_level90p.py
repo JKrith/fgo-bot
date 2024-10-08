@@ -1,5 +1,6 @@
 """
 An example of custom battle bot.
+:time: 2024/10/08
 :author: @JKrith
 """
 
@@ -11,22 +12,21 @@ import logging
 # 建议日常使用时设 INFO，需要debug时设 DEBUG
 logging.basicConfig(level=logging.WARNING)
 
-# 覆盖默认的 INTERVAL，单位为 秒 
-# 如果设备配置低，游戏加载时间长，脚本可能会跳bug。在下面的代码中增加 INTERVAL_MID的值，可能解决此问题
-bot.INTERVAL_MID = 10
+# 重设 INTERVAL_MID的值，单位为 秒 
+# 如果设备配置低，游戏加载时间长，脚本可能会跳bug。在下行代码中增加 INTERVAL_MID的值，可能解决此问题
+bot.INTERVAL_MID = 4
 
 # 实例化一个 bot.BattleBot
 insBot = bot.BattleBot(
 
     # 要打的关卡截图为'WG_level90p.png'，放在这个文件的同一级目录下
-    quest='WG_level90p.png',
+    quest='WG_level90p.png',    # 此关为 旺吉娜活动的 90+ 
 
     # 助战的职介 ALL / SABER / ARCHER / LANCER / RIDER / ASSASSIN / BERSERKER / EXTRA
     friend_class = bot.RIDER,
 
     # 需要的助战截图为'TaiGong1.png'，放在这个文件的同一级目录下
     # 如果可以接受的助战有多个，可以传入一个list，例如：friend=['friend1.png', 'friend2.png]
-    # 因为助战玩家可能开启了随机展示，最好截图助战从者的所有再临阶段
     friend=['TaiGong3.png','TaiGong1.png'],
 
     # AP策略为：当体力耗尽时，优先吃银苹果，再吃金苹果
@@ -49,7 +49,6 @@ insBot = bot.BattleBot(
 
 # 为了方便，使用了简写
 s = insBot.use_skill
-ss=insBot.use_skill_special
 m = insBot.use_master_skill
 a = insBot.attack
 
@@ -79,8 +78,8 @@ def stage_1():
 def stage_2():
     
     # s(1, 3, Taigong) 表示使用 1号位RBA的 1技能，目标 3号位太公
-    #s(1, 3, Taigong)
-    #s(Rba, 1, Taigong)
+    s(1, 3, Taigong)
+    s(Rba, 1, Taigong)
     s(Rba, 2)
     s(Alcas, 3)
     s(Alcas, 2, Alcas)
@@ -93,17 +92,21 @@ def stage_2():
 def stage_3():
 
     # m(2, 3)表示使用御主技能2，对象为 3号位太公
-    #m(2, Taigong)
+    m(2, Taigong)
     a([8, 'artsAlcas', 9])
 
+# 如果首个回合后没能解决一面，将执行下面的打法，作为补刀
+# 第一面的补刀打法
 @insBot.xjbd(1)
 def xjbd_1():
     a([9,9,9])
 
+# 第二面的补刀打法
 @insBot.xjbd(2)
 def xjbd_2():
     a([9,9,9])
 
+# 第三面的补刀打法
 @insBot.xjbd(3)
 def xjbd_3():
     a([9,9,9])

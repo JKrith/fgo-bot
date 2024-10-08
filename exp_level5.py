@@ -49,7 +49,7 @@ bot = bot.BattleBot(
 s = bot.use_skill
 m = bot.use_master_skill
 a = bot.attack
-ss = bot.use_skill_special
+ss = bot.use_skill_reinforce
 
 # 编队 
 MOlgan = 1
