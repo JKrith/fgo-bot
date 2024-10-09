@@ -59,7 +59,7 @@ python3 setup.py install
 
 `fgobot.BattleBot`类提供了`@at_stage()`装饰器，只需要在你自己的`python`源文件中实例化一个`bot`，然后将函数注册到对应的战斗阶段，接着运行`bot.run()`，就可以实现自动战斗。
 
-具体例子可以参考Release解压后根目录下的`/WG_level90p.py`。
+具体例子可以参考Release解压后根目录下的`/WG_level90p.py`和`/exp_level5.py`。
 
 ### API参考
 
@@ -68,6 +68,8 @@ python3 setup.py install
 使用（从左往右）第`servant`个从者的第`skill`个技能，施放对象为第`obj`个从者（如果是指向性）。
 
 如果`reinforce`**不**为`None`，则执行以下的判断和操作：`reinforceOrNot = True`表示使用强化技能（库库尔坎消耗暴击星 / 水妖高的宝具单体化），`reinforceOrNot = False`表示使用技能但不执行强化。如果`reinforce`为`None`，则跳过以上的判断。`reinforce`默认为`None`，对于库库和水妖高之外的从者，直接使用默认值即可
+
+根目录下的脚本`/WG_level90pp.py`有对库库使用技能的示例
 
 #### `BattleBot.use_master_skill(skill, obj=None, obj2=None)`
 

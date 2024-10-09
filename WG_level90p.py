@@ -10,7 +10,7 @@ import logging
 
 # 指定日志的输出等级（DEBUG / INFO / WARNING / ERROR）
 # 建议日常使用时设 INFO，需要debug时设 DEBUG
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # 重设 INTERVAL_MID的值，单位为 秒 
 # 如果设备配置低，游戏加载时间长，脚本可能会跳bug。在下行代码中增加 INTERVAL_MID的值，可能解决此问题
@@ -109,7 +109,7 @@ def xjbd_2():
 # 第三面的补刀打法
 @insBot.xjbd(3)
 def xjbd_3():
-    a([9,9,9])
+    a(['artsAlcas', 'artsAlcas', 9])
 
 # 程序的入口点（不加这行也可以）
 # 使用时，可以直接在命令行运行'python WG_level90p.py'
