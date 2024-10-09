@@ -10,7 +10,7 @@ import logging
 
 # 指定日志的输出等级（DEBUG / INFO / WARNING / ERROR）
 # 建议日常使用时设 INFO，需要debug时设 DEBUG
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # 重设 INTERVAL_MID的值，单位为 秒 
 # 如果设备配置低，游戏加载时间长，脚本可能会跳bug。在下行代码中增加 INTERVAL_MID的值，可能解决此问题
@@ -81,7 +81,7 @@ def stage_1():
 @insBot.at_stage(2)
 def stage_2():
     
-    # 
+    # 如果上一面用过宝具，会在第三动卡住
     a(['busterKkrk', 'busterKkrk', 7])
 
 # 第三面首个回合的打法
@@ -107,7 +107,8 @@ def xjbd_2():
 # 第三面的补刀打法
 @insBot.xjbd(stage= 3)
 def xjbd_2():
-    a([9, 9, 9])
+    s(Kkrk, 1, reinforceOrNot= True)
+    a(['busterKkrk', 'busterKkrk', 'busterKkrk'])
 
 
 # 程序的入口点（不加这行也可以）

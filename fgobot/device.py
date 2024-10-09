@@ -183,7 +183,7 @@ class Device:
         """
         Input a tap event at `pos:(x, y)`.
 
-        `(590, 230)` is the cetre of screen.
+        `(590, 230)` is the centre of screen.
         
         :param x: the x coord in pixels.
         :param y: the y coord in pixels.
@@ -398,16 +398,6 @@ class Device:
             y = pos[1]
             return self.tap(x, y)
 
-    def capture_and_probability(self, im:str) -> float: 
-        """
-        Capture screen, Return the probability of the existence of given image.
-
-        :param im: the name of the image.
-        :return: the probability (confidence).
-        """
-        self.update_screen()
-        return self.probability(im)
-    
     def probability(self, im:str) -> float:
         """
         Return the probability of the existence of given image.
@@ -418,19 +408,7 @@ class Device:
         max_val, _ = self.match(img= im)
         return max_val
     
-    def capture_find_tap(self, im: str, threshold: float = None) -> bool:
-        """
-        Capture screen, Find the given image on screencap, Tap on screen if found.
-
-        :param im: the name of image
-        :param threshold: threshold of matching, If not given, will be set to the default threshold.
-        :return: whether click
-        """
-        self.update_screen()
-        threshold = threshold or self.threshold
-        return self.find_and_tap(im,threshold)
-    
-    def find_and_tap(self, im: str, threshold: float = None) -> bool:
+    def find_and_tap(self, im: str, threshold: float = None, withPosition: bool = False) -> bool:
         """
         Find the given image on screencap, Tap on screen if found.
 
@@ -441,13 +419,18 @@ class Device:
                     else Don't tap and Return `False`  
         """
         threshold = threshold or self.threshold
-        pos = tuple()
-        prob, pos = self.match(img= im)
+        prob, (x, y) = self.match(img= im)
         if prob < threshold:
             self.logger.warning('Failed to find image {} on screen.'.format(im))
-            return False
+            if withPosition:
+                return False, (-1, -1)
+            else:
+                return False
         
-        x, y = pos[0], pos[1]
         w, h = self.getsize(im)
         self.logger.debug('find and tap image {}'.format(im))
-        return self.tap_rand(x, y, w, h)
+        if withPosition:
+            return self.tap_rand(x, y, w, h), (x, y)
+        else:
+            return self.tap_rand(x, y, w, h)
+

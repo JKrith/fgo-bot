@@ -10,7 +10,7 @@ import logging
 
 # 指定日志的输出等级（DEBUG / INFO / WARNING / ERROR）
 # 建议日常使用时设 INFO，需要debug时设 DEBUG
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 
 # 重设 INTERVAL_MID的值，单位为 秒 
 # 如果设备配置低，游戏加载时间长，脚本可能会跳bug。在下行代码中增加 INTERVAL_MID的值，可能解决此问题

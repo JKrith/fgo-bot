@@ -44,7 +44,7 @@ bot = bot.BattleBot(
 # 为了方便，使用了简写
 s = bot.use_skill
 m = bot.use_master_skill
-a = bot.attack
+a = bot.attack_old
 
 # 编队 公主 汇呆 Rider
 Arc = 1
