@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # 覆盖默认的 INTERVAL，单位为 秒 
 # 如果设备配置低，游戏加载时间长，脚本可能会跳bug。在下面的代码中增加 INTERVAL_MID的值，可以解决此问题
-bot.INTERVAL_MID = 7
+bot.INTERVAL_MID = 4
 
 # 实例化一个bot
 bot = bot.BattleBot(
@@ -49,7 +49,6 @@ bot = bot.BattleBot(
 s = bot.use_skill
 m = bot.use_master_skill
 a = bot.attack
-ss = bot.use_skill_reinforce
 
 # 编队 
 MOlgan = 1

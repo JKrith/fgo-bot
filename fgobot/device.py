@@ -249,7 +249,7 @@ class Device:
         logging.getLogger('device').debug("Pattern detected: '{}'".format(pattern))
         return re.sub(pattern, b'\n', s)
 
-    def capture(self, method: int) -> Union[np.ndarray, None]:
+    def __capture(self, method: int) -> Union[np.ndarray, None]:
         """
         Capture the screen.
 
@@ -278,7 +278,7 @@ class Device:
         """
         Update the screencap image.
         """
-        self.screen = self.capture(method= self.method)
+        self.screen = self.__capture(method= self.method)
         self.logger.debug('Screen captured.')
     
     def match(self, img:str):

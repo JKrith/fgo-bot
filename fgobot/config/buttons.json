@@ -1,4 +1,5 @@
-{ "apple":{
+{ "quest_start":[840, 560],
+  "apple":{
     "rainbow_apple":{
       "x":375,
       "y":180
@@ -90,7 +91,7 @@
   },
   "change_distance": 200,
   "swipe": {
-    "friend": [600, 602, 600, 320],
+    "friend": [600, 602, 600, 360],
     "quest": [960, 588, 960, 400]
   }
 }

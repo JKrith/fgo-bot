@@ -166,12 +166,15 @@ class BattleBot:
         self.device.tap(x,y)
         self.device.wait_and_updateScreen(INTERVAL_SHORT /2 )
 
-    def select_friend(self) -> bool:
+    def select_friend(self, friendList_status:int ) -> bool:
         """
         Select friend and enter team select screen 
 
         :Return True if enter successs
         """
+        if friendList_status== 0:
+            self.__refresh_friendlist()
+
         swp_times = 0
         while True:
             for fid in range(self.friend_count):
@@ -181,29 +184,32 @@ class BattleBot:
                 if self.device.find_and_tap(im, threshold=self.friend_threshold):
                     logging.disable(logging.NOTSET)
                     return True
-                
             else:
-                # tap refresh button
-                if swp_times >5 :
-                    swp_times = 0
-                    while True:
-                        x, y = self.buttons['refresh_friends'].values()
-                        self.device.tap(x, y)
-                        self.device.wait(INTERVAL_SHORT)
-                        x, y = self.buttons['refresh_friends_yes'].values()
-                        self.device.tap(x, y)
-                        # if friend appear, quit loop, else tap refresh again 
-                        if self.device.wait_until('view_friend_party', countLimit= INTERVAL_MID):
-                            break
                 # swipe to find
-                else:
+                if swp_times <5 :
                     swp_times += 1
                     self.__swipe('friend')
                     self.device.wait_and_updateScreen(INTERVAL_SHORT)
+                # refresh
+                else:
+                    swp_times = 0
+                    self.__refresh_friendlist()
+
+    def __refresh_friendlist(self):
+        while True:
+            x, y = self.buttons['refresh_friends'].values()
+            self.device.tap(x, y)
+            self.device.wait(INTERVAL_SHORT)
+
+            x, y = self.buttons['refresh_friends_yes'].values()
+            self.device.tap(x, y)
+            # if friend appear, quit loop, else tap refresh again 
+            if self.device.wait_until('view_friend_party', countLimit= INTERVAL_MID):
+                break
     
     def __from_terminal_select_quest(self):
         """
-        Select quest
+        Select quest. Update screen when return
 
         :Return: True if success,
 
@@ -227,45 +233,40 @@ class BattleBot:
             logger.info("try to select quest")
             self.__from_terminal_select_quest()
 
-        # Judge 4 cases
-        # case 1: when enough AP enter quest except Ordeal Call
-        if self.device.exists('friend_pick'):
-            pass
-        # case 2: when enough AP enter Ordeal Call quest
-        elif self.device.find_and_tap('quest_start'):        
-            self.device.wait_until('friend_pick')
+        # 4 cases and corresponding treatments
+        case_list = {
+            # case 1: when enough AP enter quest except Ordeal Call
+            'friend_pick'   :self.__friendList_loading, 
 
-        # case 3: no enough AP in quests except Ordeal Call
-        elif self.device.exists('ap_close'):
-            logger.info("eat Apple")
-            if self.__eat_Apple():
-                self.device.wait_until('friend_pick')
-            else:
-                logger.info('AP runs out')
-                return False
+            # case 2: when enough AP enter Ordeal Call quest
+            'quest_start'   :self.__friendList_loading, 
 
-        # case 4: no enough AP in Ordeal Call quests
-        elif self.device.find_and_tap('recover_ap'):
-            logger.info("eat Apple")
-            if self.__eat_Apple():
-                self.device.wait_and_updateScreen(INTERVAL_SHORT *2)
-                self.device.find_and_tap('quest_start')
-                self.device.wait_until('friend_pick')
-            else:
-                logger.info('AP runs out')
-                return False
-        # fail to enter, Maybe need to check macro: INTERVAL used in 'wait()' or 'wait_and_updateScreen()' 
+            # case 3: no enough AP in quests except Ordeal Call
+            'ap_regen'      :self.__recover_ap_normal,
+                
+            # case 4: no enough AP in Ordeal Call quests
+            'recover_ap'    :self.__recover_ap_OrdealCall
+            }
+        for case, treatment in case_list.items():
+            if self.device.find_and_tap(case):
+                friendList_status = treatment()
+                break
+
+        # need to check macro: INTERVAL used in 'wait()' or 'wait_and_updateScreen()' 
         # also check the images used to enter quest, path:./fgobot/images/ 
         else:
             logger.error("please adjust INTERVAL_MID in /fgobot/bot.py, or check .png file in /fgobot/images")
             return False
+        # when ap runs out
+        if friendList_status== -1:
+            return False
         
         logger.info("try to select friend")
-        self.device.wait(INTERVAL_SHORT /2)
+        
         if battle_count == 0:
             self.__select_class(self.friend_class)
         
-        self.select_friend()
+        self.select_friend(friendList_status)
         self.device.wait(INTERVAL_SHORT)
 
         # decide the party, only when first entry 
@@ -277,6 +278,48 @@ class BattleBot:
         self.device.wait_until('attack')
         logger.info('Enter success')
         return True
+            
+    def __friendList_loading(self) :
+        """
+        waiting for loading friendlist. When loading finished, return friend list status to control
+        the behavior of select_friend()
+        """
+        while True:
+            self.device.update_screen()
+            # friend appear
+            if self.device.exists('view_friend_party') :
+                return 1
+            
+            # no friend
+            elif self.device.exists('noSupport'):
+                return 0
+            
+            # loading has not finished
+            else:
+                self.device.wait(INTERVAL_SHORT *2)
+
+    def __recover_ap_normal(self):
+        """
+        In normal quest, recover ap
+        """
+        if self.__eat_Apple():
+            return self.__friendList_loading()
+        else:
+            # -1 stand for fail to enter friend list
+            return -1
+
+    def __recover_ap_OrdealCall(self):
+        """
+        In Ordeal Call quest, recover ap
+        There is one more pop-up window in Ordeal Call quest
+        """
+        if self.__eat_Apple():
+            self.device.wait_and_updateScreen(INTERVAL_SHORT *2)
+            self.device.find_and_tap('quest_start')
+            return self.__friendList_loading()
+        else:
+            # -1 stand for fail to enter friend list
+            return -1
     
     def __eat_Apple(self) -> bool:
         """
@@ -284,8 +327,9 @@ class BattleBot:
 
         :Return: False if no ap strategy or fail to recover
         """
+        logger.info("try to eat Apple")
         if not self.ap:
-            logger.error('请检查 AP 策略')
+            logger.error('AP策略不能为空')
             return False
         else:
             self.device.wait_and_updateScreen(INTERVAL_SHORT)
@@ -296,7 +340,7 @@ class BattleBot:
                     logger.info("Apple used")
                     return True
             else:
-                logger.error('请检查buttons.json中的参数 和 路径./fgobot/下用于识别的图片')
+                logger.error('找不到AP道具 或者 道具已用尽')
                 return False
 
     def __play_battle(self) -> int:
@@ -339,7 +383,7 @@ class BattleBot:
 
     def __end_battle(self, battle_count: int, max_loops: int):
         """
-        Click to end the billing page.
+        Click to end the billing page. Update screen when return
         
         :param battle_count:
         :param max_loops: read the value of `run.count` and `run.max_loops`, deciding to continue or quit battle
@@ -370,6 +414,7 @@ class BattleBot:
             self.device.wait(INTERVAL_LONG)
             self.device.wait_until('menu')
             return True
+
     def __wait_manual_operation(self, im: str, sec: int = INTERVAL_SHORT *2):
         """
         waitting for manual operation, when lack proper skill object
@@ -614,6 +659,7 @@ class BattleBot:
 
         x, y, w, h = self.__button('noble_card')
         x += self.buttons['noble_card_distance'] * (userChoice - 6)
+        logger.info('choose hougu[{}]'.format(userChoice -5))
         self.device.tap_rand(x, y, w, h)
 
     def __attack_random(self, noUseParam = 0):
@@ -624,6 +670,7 @@ class BattleBot:
                 break
         x, y, w, h = self.__button('card')
         x += self.buttons['normal_card_distance'] * (selected_card)
+        logger.info('choose card[{}]'.format(selected_card +1))
         self.device.tap_rand(x, y, w, h)
         self.__unselected_NormalCards[selected_card] = False
         
@@ -636,6 +683,7 @@ class BattleBot:
             self.__attack_random()
             return
         
+        logger.info('choose card {}'.format(userChoice))
         # if found, calculate the location of chosen card, pop it from unselected cards
         x -= 50
         location = -1   # location range [0,4]
