@@ -9,17 +9,17 @@ from typing import Dict, Any, Callable
 from . import device
 import json
 from pathlib import Path
-from time import sleep
 from typing import Tuple, List, Union
 from random import randint
 
 logger = logging.getLogger('bot')
 
-#time for waitting between operations
-INTERVAL_SHORT = 1
-INTERVAL_MID = 4
-INTERVAL_LONG = 20
+# time for waitting between operations
+INTERVAL_LONG = 20          # used in wait: loading battle, playing attack animation
+INTERVAL_MID = 4            # used in wait: loading friend list 
+INTERVAL_SHORT = 1          # used in wait: pop up windows, any other case
 
+# argument for calculating the position of friendlist class button
 ALL     = 0
 SABER   = 1
 ARCHER  = 2
@@ -29,6 +29,7 @@ CASTER  = 5
 ASSASSIN = 6
 BERSERKER = 7
 EXTRA   = 8
+
 class BattleBot:
     """
     A class of the bot that automatically play battles.
