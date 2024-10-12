@@ -114,16 +114,6 @@ class BattleBot:
         logger.debug('Function {} registered to stage {}'.format(f.__name__, stage))
         self.stage_handlers[stage] = f
 
-    def __button(self, btn: str):
-        """
-        Return the __button coords and size.
-
-        :param btn: the name of __button
-        :return: (x, y, w, h)
-        """
-        btn = self.buttons[btn]
-        return btn['x'], btn['y'], btn['w'], btn['h']
-    
     def __swipe(self, track):
         """
         Swipe in given track.
@@ -470,7 +460,7 @@ class BattleBot:
         :param obj: the object of skill, if required.
         :param reinfoceOrNot: whether reinforce skill or not.
         """
-        x, y, w, h = self.__button('skill')
+        x, y, w, h = self.buttons['skill'].values()
         x += self.buttons['servant_distance'] * (servant - 1)
         x += self.buttons['skill_distance'] * (skill - 1)
         logger.info('Used skill ({}, {})'.format(servant, skill))
@@ -494,7 +484,7 @@ class BattleBot:
                 self.__wait_manual_operation(im= 'choose_object')
 
             else:
-                x, y, w, h = self.__button('choose_object')
+                x, y, w, h = self.buttons['choose_object'].values()
                 x += self.buttons['choose_object_distance'] * (obj - 1)
                 logger.info('Chose skill object {}.'.format(obj))
                 self.device.tap(x, y)
@@ -528,11 +518,11 @@ class BattleBot:
         :param obj2: the second object of skill, if required.
         """
 
-        x, y, w, h = self.__button('master_skill_menu')
+        x, y, w, h = self.buttons['master_skill_menu'].values()
         self.device.tap(x, y)
         self.device.wait(INTERVAL_SHORT)
 
-        x, y, w, h = self.__button('master_skill')
+        x, y, w, h = self.buttons['master_skill'].values()
         x += self.buttons['master_skill_distance'] * (skill - 1)
         self.device.tap(x, y)
         logger.info('Used master skill {}'.format(skill))
@@ -544,7 +534,7 @@ class BattleBot:
                 logger.warning('请为 master技能{} 指定一个对象.'.format(skill))
                 self.__wait_manual_operation(im= 'choose_object')
             elif 1 <= obj <= 3:
-                x, y, w, h = self.__button('choose_object')
+                x, y, w, h = self.buttons['choose_object'].values()
                 x += self.buttons['choose_object_distance'] * (obj - 1)
                 self.device.tap(x, y)
                 logger.info('Chose master skill object {}.'.format(obj))
@@ -559,7 +549,7 @@ class BattleBot:
                 self.__wait_manual_operation(im= 'change_disabled')
 
             elif 1 <= obj <= 3 and 4 <= obj2 <= 6:
-                x, y, w, h = self.__button('change')
+                x, y, w, h = self.buttons['change'].values()
                 x += self.buttons['change_distance'] * (obj - 1)
                 self.device.tap(x, y)
 
@@ -590,19 +580,19 @@ class BattleBot:
         assert len(cards) == 3, 'Number of cards must be 3.'
         assert len(set(cards)) == 3, 'Cards must be distinct.'
 
-        x, y, w, h = self.__button('attack')
+        x, y, w, h = self.buttons['attack'].values()
         self.device.tap(x, y)
         self.device.wait(INTERVAL_SHORT * 2)
 
         unselected_NormalCards = [1, 2, 3, 4, 5]
         for card in cards:
             if 1 <= card <= 5:
-                x, y, w, h = self.__button('card')
+                x, y, w, h = self.buttons['card'].values()
                 x += self.buttons['normal_card_distance'] * (card - 1)
                 unselected_NormalCards.pop(card - 1)
                 self.device.tap_rand(x, y, w, h)
             elif 6 <= card <= 8:
-                x, y, w, h = self.__button('noble_card')
+                x, y, w, h = self.buttons['noble_card'].values()
                 x += self.buttons['noble_card_distance'] * (card - 6)
                 self.device.tap_rand(x, y, w, h)
             else:
@@ -621,7 +611,7 @@ class BattleBot:
         """
         assert len(cards) == 3, 'Number of cards must be 3.'
 
-        x, y, _, _ = self.__button('attack')
+        x, y, _, _ = self.buttons['attack'].values()
         self.device.tap(x, y)
         self.device.wait_until('battleBack')
 
@@ -658,7 +648,7 @@ class BattleBot:
     
     def __attack_hougu(self, userChoice: int):
 
-        x, y, w, h = self.__button('noble_card')
+        x, y, w, h = self.buttons['noble_card'].values()
         x += self.buttons['noble_card_distance'] * (userChoice - 6)
         logger.info('choose hougu[{}]'.format(userChoice -5))
         self.device.tap_rand(x, y, w, h)
@@ -669,7 +659,7 @@ class BattleBot:
             if self.__unselected_NormalCards[i] == True:
                 selected_card = i
                 break
-        x, y, w, h = self.__button('card')
+        x, y, w, h = self.buttons['card'].values()
         x += self.buttons['normal_card_distance'] * (selected_card)
         logger.info('choose card[{}]'.format(selected_card +1))
         self.device.tap_rand(x, y, w, h)
