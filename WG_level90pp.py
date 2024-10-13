@@ -43,7 +43,11 @@ insBot = bot.BattleBot(
 
     # 助战图像识别的阈值为0.95
     # 如果设的过低会导致选择错误的助战，太高会导致选不到助战，请根据实际情况调整
-    friend_threshold = 0.95
+    friend_threshold = 0.95,
+    
+    # 通过本地端口16384连接（具体参数请参考自己的设备/模拟器）
+    # 如果不知道如何查看端口号，请参考 https://mumu.163.com/help/20230214/35047_1073151.html
+    port= '127.0.0.1:16384'
 )
 
 
@@ -114,12 +118,6 @@ def xjbd_2():
 # 程序的入口点（不加这行也可以）
 # 使用时，可以直接在命令行运行'python WG_level90p.py'
 if __name__ == '__main__':
-    # 检查设备是否连接
-    if not insBot.device.connected():
-        
-        # 如果没有连接，则尝试通过本地端口16384连接（具体参数请参考自己的设备/模拟器）
-        # 如果不知道如何查看端口号，请参考 https://mumu.163.com/help/20230214/35047_1073151.html
-        insBot.device.connect('127.0.0.1:16384')
 
     # 启动bot，打3次，最多打5次
     insBot.run(max_loops=3)
