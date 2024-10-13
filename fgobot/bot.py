@@ -42,7 +42,8 @@ class BattleBot:
                  stage_count = 3,
                  ap: List[str] = None,
                  quest_threshold: float = 0.97,
-                 friend_threshold: float = 0.97
+                 friend_threshold: float = 0.97,
+                 port: str = '127.0.0.1:16384',
                  ):
         """
 
@@ -56,7 +57,9 @@ class BattleBot:
                    If not given, the bot will stop when AP runs out.
         :param quest_threshold: threshold of quest matching
         :param friend_threshold: threshold of friend matching
+        :param port: the connect port of device
         """
+        logger.info('Fgobot loading...')
 
         # A dict of the handler functions that are called repeatedly at each stage.
         # Use `at_stage` to register functions.
@@ -87,7 +90,8 @@ class BattleBot:
             user_imgs['f_{}'.format(fid)] = Path(friend[fid]).absolute()
 
         # Device
-        self.device = device.Device(load_imgs= user_imgs, capture_method= device.FROM_SHELL)
+        self.device = device.Device(load_imgs= user_imgs, port= port, 
+                                    capture_method= device.FROM_SHELL)
 
         # AP strategy
         self.ap = ap
@@ -216,7 +220,8 @@ class BattleBot:
         """
         Enter the battle.
 
-        :param battle_count: read the value of `run.count`, deciding whether skip quest selection and team selection 
+        :param battle_count: read the value of `run.count`, 
+        deciding whether skip quest selection and team selection 
 
         :return: True if successful, else False.
         """
@@ -246,7 +251,8 @@ class BattleBot:
         # need to check macro: INTERVAL used in 'wait()' or 'wait_and_updateScreen()' 
         # also check the images used to enter quest, path:./fgobot/images/ 
         else:
-            logger.error("please adjust INTERVAL_MID in /fgobot/bot.py, or check .png file in /fgobot/images")
+            logger.error("please adjust INTERVAL_MID in /fgobot/bot.py, \
+                         or check .png file in /fgobot/images")
             return False
         # when ap runs out
         if friendList_status== -1:
@@ -265,6 +271,7 @@ class BattleBot:
             logger.info("select team")
             self.device.wait_until_tap('start_quest')
 
+        logger.info('wait...')
         self.device.wait(INTERVAL_LONG)
         self.device.wait_until('attack')
         logger.info('Enter success')
@@ -272,7 +279,8 @@ class BattleBot:
             
     def __friendList_loading(self) :
         """
-        waiting for loading friendlist. When loading finished, return friend list status to control
+        waiting for loading friendlist. When loading finished, 
+        return friend list status to control
         the behavior of select_friend()
         """
         while True:
@@ -377,7 +385,8 @@ class BattleBot:
         Click to end the billing page. Update screen when return
         
         :param battle_count:
-        :param max_loops: read the value of `run.count` and `run.max_loops`, deciding to continue or quit battle
+        :param max_loops: read the value of `run.count` and `run.max_loops`, 
+        deciding to continue or quit battle
         """
         
         while not self.device.updateScreen_and_exists('next_step'):
@@ -402,6 +411,7 @@ class BattleBot:
                 return False
         else:
             self.device.find_and_tap('close')
+            logger.info('wait...')
             self.device.wait(INTERVAL_LONG)
             self.device.wait_until('menu')
             return True
@@ -599,6 +609,7 @@ class BattleBot:
                 logger.warning('Card number must be in range [1, 8]')
             self.device.wait(INTERVAL_SHORT)
         
+        logger.info('wait...')
         self.device.wait(INTERVAL_LONG)
 
     def attack(self, cards: list ):
@@ -644,6 +655,7 @@ class BattleBot:
             self.device.update_screen()
 
         # waiting for battle animation
+        logger.info('wait...')
         self.device.wait(INTERVAL_LONG)
     
     def __attack_hougu(self, userChoice: int):

@@ -1,7 +1,7 @@
 """
 Android device interaction.
 """
-
+import pygetwindow
 import subprocess
 import logging
 import re
@@ -29,8 +29,13 @@ class Device:
     `pos` stand for 'position'
     """
 
-    def __init__(self, timeout: int = 15, adb_path: str = 'adb', threshold: float = 0.85, \
-                  load_imgs: dict = dict(), capture_method: int = FROM_SHELL):
+    def __init__(self, timeout: int = 15, 
+                 adb_path: str = 'adb', 
+                 threshold: float = 0.85, 
+                 load_imgs: dict = dict(), 
+                 capture_method: int = FROM_SHELL,
+                 port: str = '127.0.0.1:16384',
+                 ):
         """
 
         :param timeout: the timeout of executing commands.
@@ -43,6 +48,8 @@ class Device:
 
         :param capture_method:  Options are `FROM_SHELL` or `SDCARD_PULL`, which \
             decides the way to capture screen is `from adb shell` or `from sd-card`
+        
+        :param port: the connect port of device
         """
 
         self.logger = logging.getLogger('device')
@@ -51,7 +58,19 @@ class Device:
 
         self.timeout = timeout
 
-        self.size = (1280, 720)
+        # record user's screen size
+        self.screen_size = (1280, 720)
+
+        # whether enable zoom
+        self.zoom_switch = False
+        self.zoom_factor = (1, 1)
+
+        if not self.connected():
+            # If no connection, try to connect through local port
+            self.connect(port)
+        
+        self.get_screen_size()
+
         self.threshold = threshold
 
         # Load images in the path ' ./fgobot/images/ '
@@ -63,7 +82,6 @@ class Device:
         self.screen = None
 
         # Load images provided by user
-
         for n, p in load_imgs.items():
             self.load_image(name = n, im = p)
 
@@ -125,6 +143,28 @@ class Device:
         else:
             self.logger.info('OK device connected.')
             return True
+
+    def screen_adapter(self, src):
+        """
+        resize screen.
+        """
+        if self.zoom_switch:
+            self.logger.debug('Screen resized')
+            src = cv.resize(src, (1280, 720))
+        return src
+    
+    def tap_adapter(self, pos: tuple[int, int]) -> tuple[int, int]:
+        """
+        zoom the position of tap or swipe, return new position
+        """
+        if self.zoom_switch:
+            x_float = pos[0]*self.zoom_factor[0]
+            y_float = pos[1]*self.zoom_factor[1]
+            npos = (int(x_float), int(y_float))
+            self.logger.debug('position zoomed')
+            return npos
+        else:
+            return pos
     
     def load_image(self, im: Path, name=''):
         """
@@ -153,7 +193,7 @@ class Device:
 
         self.logger.info('Images loaded successfully.')
 
-    def getsize(self, im: str) -> Tuple[int, int]:
+    def get_image_size(self, im: str) -> Tuple[int, int]:
         """
         Return the size of given image.
 
@@ -163,7 +203,7 @@ class Device:
         h, w, _ = self.images[im].shape
         return w, h
 
-    def screen_size(self) -> bool:
+    def get_screen_size(self) -> bool:
         """
         Get the resolution (screen size) of the device.
 
@@ -172,9 +212,16 @@ class Device:
         output = self.__run_cmd(['shell', 'wm', 'size'])
         for line in output:
             if line.startswith('Physical size'):
-                self.size = tuple(map(int, re.findall(r'\d+', line)))
-                self.logger.info('Got screen size {:d} x {:d}'.format(self.size[0], self.size[1]))
+                y, x = map(int, re.findall(r'\d+', line))
+                self.screen_size = (x, y)
+                self.logger.info('Got screen size {:d} x {:d}'.format(self.screen_size[0], self.screen_size[1]))
+                if self.screen_size != (1280, 720):
+                    x_zoom = self.screen_size[0] / 1280
+                    y_zoom = self.screen_size[1] / 720
+                    self.zoom_switch = True
+                    self.zoom_factor = (x_zoom, y_zoom)
                 return True
+            
         self.logger.error('Failed to get screen size')
         self.logger.error('Error message: {}'.format('\n'.join(output)))
         return False
@@ -189,6 +236,7 @@ class Device:
         :param y: the y coord in pixels.
         :return: whether the event is successful.
         """
+        (x, y) = self.tap_adapter(pos=(x, y))
         coords = '{:d} {:d}'.format(x, y)
         output = self.__run_cmd(['shell', 'input tap {}'.format(coords)])
         for line in output:
@@ -214,7 +262,7 @@ class Device:
         y = randint(y, y + h - 1)
         return self.tap(x, y)
 
-    def swipe(self, pos0: Tuple[int, int], pos1: Tuple[int, int], duration: int = 500) -> bool:
+    def swipe(self, pos0: Tuple[int, int], pos1: Tuple[int, int], duration: int = 1000) -> bool:
         """
         Input a swipe event from `pos0` to `pos1`, taking `duration` milliseconds.
 
@@ -223,8 +271,10 @@ class Device:
         :param duration: the time (in milliseconds) the swipe will take.
         :return: whether the event is successful.
         """
-        coords0 = '{:d} {:d}'.format(pos0[0], pos0[1])
-        coords1 = '{:d} {:d}'.format(pos1[0], pos1[1])
+        newpos = map(self.tap_adapter, [pos0, pos1])
+        npos0, npos1 = list(newpos)
+        coords0 = '{:d} {:d}'.format(npos0[0], npos0[1])
+        coords1 = '{:d} {:d}'.format(npos1[0], npos1[1])
         output = self.__run_cmd(['shell', 'input swipe {} {} {:d}'.format(coords0, coords1, duration)])
         for line in output:
             if line.startswith('error'):
@@ -276,9 +326,10 @@ class Device:
 
     def update_screen(self):
         """
-        Update the screencap image.
+        Update the screencap image and resize screencap to 1280x720. 
         """
         self.screen = self.__capture(method= self.method)
+        self.screen = self.screen_adapter(self.screen)
         self.logger.debug('Screen captured.')
     
     def match(self, img:str):
@@ -427,7 +478,7 @@ class Device:
             else:
                 return False
         
-        w, h = self.getsize(im)
+        w, h = self.get_image_size(im)
         self.logger.debug('find and tap image {}'.format(im))
         if withPosition:
             return self.tap_rand(x, y, w, h), (x, y)
