@@ -9,14 +9,14 @@ from typing import Dict, Any, Callable
 from . import device
 import json
 from pathlib import Path
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Literal
 from random import randint
 
 logger = logging.getLogger('bot')
 
 # time for waitting between operations
 INTERVAL_LONG = 20          # used in wait: loading battle, playing attack animation
-INTERVAL_MID = 4            # used in wait: loading friend list 
+INTERVAL_MID   = 4          # used in wait: loading friend list 
 INTERVAL_SHORT = 1          # used in wait: pop up windows, any other case
 
 # argument for calculating the position of friendlist class button
@@ -127,6 +127,20 @@ class BattleBot:
         """
         x1, y1, x2, y2 = map(lambda x: x, self.buttons['swipe'][track])
         self.device.swipe((x1, y1), (x2, y2))
+    
+    def tap_button(self, base_position_key:str, increment:list = None) ->bool :
+        """
+        read argument from buttons.json, use argument to calculate the position of button
+         and tap button.
+        
+        """
+        x, y = self.buttons[base_position_key].values()
+        if increment is not None:
+            for distance_key, distance_number in increment:
+                assert isinstance(distance_key, str),  'arg: increment invalid'
+                assert isinstance(distance_number, int),  'arg: increment invalid'
+                x += self.buttons[distance_key] * distance_number
+        return self.device.tap(x, y)
 
     def __get_current_stage(self) -> int:
         """
@@ -158,7 +172,8 @@ class BattleBot:
 
         x, y = self.buttons['all'].values()
         x += self.buttons['support_class_distance'] * (friend_class)
-        self.device.tap(x,y)
+        logger.info(f'select class {friend_class}')
+        self.device.tap(x, y)
         self.device.wait_and_updateScreen(INTERVAL_SHORT /2 )
 
     def select_friend(self, friendList_status:int ) -> bool:
@@ -178,7 +193,9 @@ class BattleBot:
                 
                 if self.device.find_and_tap(im, threshold=self.friend_threshold):
                     logging.disable(logging.NOTSET)
+                    self.device.wait(INTERVAL_SHORT)
                     return True
+            # when all friends are not found
             else:
                 # swipe to find
                 if swp_times <5 :
@@ -199,7 +216,7 @@ class BattleBot:
             x, y = self.buttons['refresh_friends_yes'].values()
             self.device.tap(x, y)
             # if friend appear, quit loop, else tap refresh again 
-            if self.device.wait_until('view_friend_party', countLimit= INTERVAL_MID):
+            if self.device.wait_until('view_friend_party', countLimit= 10):
                 break
     
     def __from_terminal_select_quest(self):
@@ -248,9 +265,9 @@ class BattleBot:
                 friendList_status = treatment()
                 break
 
-        # need to check macro: INTERVAL used in 'wait()' or 'wait_and_updateScreen()' 
-        # also check the images used to enter quest, path:./fgobot/images/ 
         else:
+            # need to check macro: INTERVAL used in 'wait()' or 'wait_and_updateScreen()' 
+            # also check the images used to enter quest, path:./fgobot/images/ 
             logger.error("please adjust INTERVAL_MID in /fgobot/bot.py, \
                          or check .png file in /fgobot/images")
             return False
@@ -264,7 +281,6 @@ class BattleBot:
             self.__select_class(self.friend_class)
         
         self.select_friend(friendList_status)
-        self.device.wait(INTERVAL_SHORT)
 
         # decide the party, only when first entry 
         if battle_count == 0:
@@ -401,7 +417,7 @@ class BattleBot:
         if self.device.find_and_tap('not_apply'):
             self.device.wait_and_updateScreen(INTERVAL_SHORT)
 
-        # continue or quit battle
+        # continue battle
         if battle_count < max_loops:
             if self.device.find_and_tap('continue_battle'):
                 self.device.wait_and_updateScreen(INTERVAL_SHORT *2)
@@ -409,6 +425,7 @@ class BattleBot:
             else:
                 logger.error('storm-tank runs out')
                 return False
+        # quit battle
         else:
             self.device.find_and_tap('close')
             logger.info('wait...')
@@ -470,22 +487,21 @@ class BattleBot:
         :param obj: the object of skill, if required.
         :param reinfoceOrNot: whether reinforce skill or not.
         """
-        x, y, w, h = self.buttons['skill'].values()
+        x, y = self.buttons['skill'].values()
         x += self.buttons['servant_distance'] * (servant - 1)
         x += self.buttons['skill_distance'] * (skill - 1)
         logger.info('Used skill ({}, {})'.format(servant, skill))
         self.device.tap(x, y)
         self.device.wait(INTERVAL_SHORT)
         
-        # for special skill, for example, KuKulcan
+        # skill reinforce, for example, KuKulcan
         if reinforceOrNot is not None:
             if reinforceOrNot:
-                pos = self.buttons['skill_reinforce']['yes']
-                self.device.tap(pos[0], pos[1])
+                x, y = self.buttons['skill_reinforce']['yes']
+                self.device.tap_and_wait(x, y, INTERVAL_SHORT/2)
             else:
-                pos = self.buttons['skill_reinforce']['no']
-                self.device.tap(pos[0], pos[1])
-            self.device.wait(INTERVAL_SHORT /2)
+                x, y = self.buttons['skill_reinforce']['no']
+                self.device.tap_and_wait(x, y, INTERVAL_SHORT /2)
 
         # when need to select object
         if self.device.updateScreen_and_exists('choose_object'):
@@ -494,7 +510,7 @@ class BattleBot:
                 self.__wait_manual_operation(im= 'choose_object')
 
             else:
-                x, y, w, h = self.buttons['choose_object'].values()
+                x, y = self.buttons['choose_object'].values()
                 x += self.buttons['choose_object_distance'] * (obj - 1)
                 logger.info('Chose skill object {}.'.format(obj))
                 self.device.tap(x, y)
@@ -505,18 +521,6 @@ class BattleBot:
         self.device.wait(INTERVAL_SHORT)
         self.device.wait_until('attack')
     
-    def use_skill_special(self, servant: int, skill: int, obj= None, ReinforceOrNot: bool = True ):
-        """
-        Use a Kukulcan's skill. 
-
-        :param servant: the servant id.
-        :param skill: the skill id.
-        :param obj: the object of skill, if required.
-        :param ReinforceOrNot: whether consume stars to reinforce
-        """
-        self.use_skill(servant= servant, skill= skill, obj= obj, ReinforceEnable= True, \
-                       ReinforceOrNot= ReinforceOrNot)
-
     def use_master_skill(self, skill: int, obj=None, obj2=None):
         """
         Use a master skill.
@@ -529,14 +533,12 @@ class BattleBot:
         """
 
         x, y, w, h = self.buttons['master_skill_menu'].values()
-        self.device.tap(x, y)
-        self.device.wait(INTERVAL_SHORT)
+        self.device.tap_and_wait(x, y, INTERVAL_SHORT)
 
         x, y, w, h = self.buttons['master_skill'].values()
         x += self.buttons['master_skill_distance'] * (skill - 1)
-        self.device.tap(x, y)
+        self.device.tap_and_wait(x, y, INTERVAL_SHORT)
         logger.info('Used master skill {}'.format(skill))
-        self.device.wait(INTERVAL_SHORT)
 
         # when need to select 1 object
         if self.device.updateScreen_and_exists('choose_object'):
@@ -544,7 +546,7 @@ class BattleBot:
                 logger.warning('请为 master技能{} 指定一个对象.'.format(skill))
                 self.__wait_manual_operation(im= 'choose_object')
             elif 1 <= obj <= 3:
-                x, y, w, h = self.buttons['choose_object'].values()
+                x, y = self.buttons['choose_object'].values()
                 x += self.buttons['choose_object_distance'] * (obj - 1)
                 self.device.tap(x, y)
                 logger.info('Chose master skill object {}.'.format(obj))
@@ -564,19 +566,75 @@ class BattleBot:
                 self.device.tap(x, y)
 
                 x += self.buttons['change_distance'] * (obj2 - obj)
-                self.device.tap(x, y)
+                self.device.tap_and_wait(x, y, INTERVAL_SHORT)
                 logger.info('Chose order change object ({}, {}).'.format(obj, obj2))
-                self.device.wait(INTERVAL_SHORT)
+
                 self.device.find_and_tap('change')
                 logger.info('Order Change')
             else:
-                logger.warning('master换人技能 的对象不恰当.')
+                logger.warning(f'master换人技能的对象{obj}, {obj2}不恰当.')
                 self.__wait_manual_operation(im= 'change_disabled')
 
         # when no need to select or selection is finished
         self.device.tap(590, 230)
         self.device.wait(INTERVAL_SHORT)
         self.device.wait_until('attack')
+    
+    def __choose_enemy(self, enemy: int=3):
+        """
+        choose enemy, as object of skill or attack. From left to right are 1, 2, 3
+        """
+        x, y = self.buttons['enemy'].values()
+        x += self.buttons['enemy_distance'] * (enemy - 1)
+        self.device.tap(x, y)
+
+    def use_skill_enemy(self, servant:int, skill:int, enemy:int=3):
+        """
+        Use a servant skill to an Enemy. 
+
+        :param skill: the skill id.
+        :param enemy: the object of skill. From left to right are 1, 2, 3
+        """
+        logger.info(f'Servant-{servant} skill-{skill} Target: {enemy}')
+        self.__choose_enemy(enemy)
+        self.use_skill(servant, skill, None, None)
+
+    def use_master_skill_enemy(self, skill:int, enemy:int=3):
+        """
+        Use a master skill to an Enemy. 
+
+        :param skill: the skill id.
+        :param enemy: the object of skill. From left to right are 1, 2, 3
+        """
+        logger.info(f'Master skill-{skill} Target: {enemy}')
+        self.__choose_enemy(enemy)
+        self.use_master_skill(skill, None, None)
+
+    def use_spell(self, obj: Literal[1, 2, 3]):
+        """
+        Use spell to charge for `obj`-th servant
+        
+        :param obj: the number of servant, should be one of [1,2,3]
+        """
+        # continuously tap
+        for im in ['spell', 'spell_np', 'spell_decide']:
+            x, y = self.buttons[im].values()
+            self.device.tap(x, y)
+            self.device.wait(INTERVAL_SHORT /2)
+
+        if 1 <= obj <= 3:
+            x, y = self.buttons['choose_object'].values()
+            x += self.buttons['choose_object_distance'] * (obj - 1)
+            logger.info(f'Spell used, obj is servant[{obj}]')
+            self.device.tap(x, y)
+        else:
+            logger.warning(f'使用令咒的对象{obj}不恰当 应该是1、2或3.')
+            self.__wait_manual_operation('choose_object')
+
+        # tap for high speed animation
+        self.device.tap()
+        self.device.wait_until('attack', INTERVAL_SHORT*2)
+        return
 
     def attack_old(self, cards: list):
         """
@@ -594,12 +652,11 @@ class BattleBot:
         self.device.tap(x, y)
         self.device.wait(INTERVAL_SHORT * 2)
 
-        unselected_NormalCards = [1, 2, 3, 4, 5]
+        
         for card in cards:
             if 1 <= card <= 5:
                 x, y, w, h = self.buttons['card'].values()
                 x += self.buttons['normal_card_distance'] * (card - 1)
-                unselected_NormalCards.pop(card - 1)
                 self.device.tap_rand(x, y, w, h)
             elif 6 <= card <= 8:
                 x, y, w, h = self.buttons['noble_card'].values()
@@ -612,15 +669,17 @@ class BattleBot:
         logger.info('wait...')
         self.device.wait(INTERVAL_LONG)
 
-    def attack(self, cards: list ):
+    def attack(self, cards: list, enemy: int=3 ):
         """
         Tap 'attack' button and choose three cards.
         
         :param cards: list, its lenth should be 3, and its element should be one of
-        
+        :param enemy: the object of skill. From left to right are 1, 2, 3
         number `9` for XJBD / number `6 ~ 8` for noble card / your preferred card
         """
         assert len(cards) == 3, 'Number of cards must be 3.'
+        
+        self.__choose_enemy(enemy)
 
         x, y, _, _ = self.buttons['attack'].values()
         self.device.tap(x, y)
@@ -639,20 +698,19 @@ class BattleBot:
                 8 : self.__attack_hougu,
                 9 : self.__attack_random,
             }
-        while(cards):
-            # in each iteration, pop 1 element from cards and complete a click
-            # when cards clear, quit loop 
-            userChoice = cards.pop(0)
+
+        # pop each element from cards and tap it
+        for userChoice in cards:
             # add user's preferred card to cards option
             if isinstance(userChoice, str) and userChoice not in cardsOption:
                 cardsOption[userChoice] = self.__attack_preferred
                 self.device.load_image(Path(userChoice +'.png'), userChoice)
+            
             # execute the choice
             cardsOption[userChoice](userChoice)
             
             # interval between clicks 
-            self.device.wait(INTERVAL_SHORT /2)
-            self.device.update_screen()
+            self.device.wait_and_updateScreen(INTERVAL_SHORT /2)
 
         # waiting for battle animation
         logger.info('wait...')
@@ -673,6 +731,7 @@ class BattleBot:
                 break
         x, y, w, h = self.buttons['card'].values()
         x += self.buttons['normal_card_distance'] * (selected_card)
+        
         logger.info('choose card[{}]'.format(selected_card +1))
         self.device.tap_rand(x, y, w, h)
         self.__unselected_NormalCards[selected_card] = False
@@ -686,8 +745,8 @@ class BattleBot:
             self.__attack_random()
             return
         
-        logger.info('choose card {}'.format(userChoice))
         # if found, calculate the location of chosen card, pop it from unselected cards
+        logger.info('choose card {}'.format(userChoice))
         x -= 50
         location = -1   # location range [0,4]
         while x >0:
@@ -696,12 +755,30 @@ class BattleBot:
         else:
             self.__unselected_NormalCards[location] = False
 
+    def __check_xjbd_handlers(self) -> bool:
+        try:
+            # Check if the handler count is less than the expected stage count
+            if len(self.xjbd_handlers) != self.stage_count:
+                raise Exception('xjbd less than stage count, try to auto fill')
+        except Exception as e:
+            # Handle the case when handlers are fewer than expected
+            logger.warning(e)  
+            for n in range(1, self.stage_count + 1):
+                # Fill missing handlers with __attack_xjbd method
+                if not self.xjbd_handlers.get(n):
+                    logger.debug(f'attack([9,9,9]) registered to xjbd {n}')
+                    self.xjbd_handlers[n] = partial(self.attack, [9, 9, 9])
+
+        logger.info('handlers filled')
+        return True
+    
     def run(self, max_loops: int = 3):
         """
         Start the bot.
 
         :param max_loops: the max number of loops.
         """
+        self.__check_xjbd_handlers()
         #count for the number of battles which were completed successfully
         count = 0
         for n_loop in range(max_loops):

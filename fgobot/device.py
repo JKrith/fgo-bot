@@ -1,7 +1,6 @@
 """
 Android device interaction.
 """
-import pygetwindow
 import subprocess
 import logging
 import re
@@ -229,8 +228,6 @@ class Device:
     def tap(self, x: int = 590, y: int = 230) -> bool:
         """
         Input a tap event at `pos:(x, y)`.
-
-        `(590, 230)` is the centre of screen.
         
         :param x: the x coord in pixels.
         :param y: the y coord in pixels.
@@ -351,7 +348,7 @@ class Device:
         
         res = cv.matchTemplate(self.screen, template, TM_METHOD)
         _, max_val, _, max_loc = cv.minMaxLoc(res)
-        self.logger.debug('max_val = {}, max_loc = {}'.format(max_val, max_loc))
+        self.logger.debug(f'image:{img}, max_val = {max_val}, max_loc = {max_loc}')
         
         return max_val, max_loc
     
@@ -458,6 +455,14 @@ class Device:
         """
         max_val, _ = self.match(img= im)
         return max_val
+    
+    def tap_and_wait(self, x: int, y: int, sec: int = 1):
+        """
+        Input a tap event at `pos:(x, y)`, then wait for `sec` second.
+        """
+        success = self.tap(x, y)
+        self.wait(sec)
+        return success
     
     def find_and_tap(self, im: str, threshold: float = None, withPosition: bool = False) -> bool:
         """

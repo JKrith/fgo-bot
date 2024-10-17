@@ -58,3 +58,4 @@ fgobot/__pycache__/
 ########
 /desktop.ini
 
+fgobot/test_tk.py

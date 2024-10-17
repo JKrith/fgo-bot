@@ -38,9 +38,7 @@
   },
   "skill": {
     "x": 73,
-    "y": 573,
-    "w": 50,
-    "h": 50
+    "y": 573
   },
   "skill_distance": 94,
   "servant_distance": 319,
@@ -59,12 +57,14 @@
   "master_skill_distance": 90,
   "choose_object": {
     "x": 330,
-    "y": 390,
-    "w": 50,
-    "h": 50
+    "y": 320
   },
   "choose_object_distance": 318,
-  
+  "enemy":{
+    "x":131,
+    "y":204
+  },
+  "enemy_distance": 148,
   "skill_reinforce":{
     "yes": [961, 426],
     "no": [644, 423]
@@ -90,6 +90,18 @@
     "h":100
   },
   "change_distance": 200,
+  "spell":{
+    "x":1063,
+    "y":75
+  },
+  "spell_np":{
+    "x":640,
+    "y":360
+  },
+  "spell_decide":{
+    "x":820,
+    "y": 430
+  },
   "swipe": {
     "friend": [600, 602, 600, 260],
     "quest": [960, 588, 960, 400]

@@ -26,7 +26,7 @@ python3 setup.py install
 ```
 
 ## 使用前的准备
-- 推荐使用模拟器进行游戏，并调整分辨率为`1280x720`。**使用真机可能导致分辨率和连接等问题。**
+- 推荐使用模拟器进行游戏。**使用真机可能导致分辨率和连接等问题。**
 
 - 构筑所用的队伍。由于当前版本不支持获取敌方信息，建议选择稳定的宝具速刷队。
 
@@ -40,16 +40,16 @@ python3 setup.py install
 
 - 在选择指令卡界面调整游戏速度为2倍速。
 
-- 在设备/模拟器上对要打的副本和期望的助战截图，放在脚本的同级目录下，可以参考`/qp.png`和`/friend_qp.png`。
-  ![quest](https://github.com/will7101/fgo-bot/blob/master/qp.png?raw=true)
+- 在设备/模拟器上对要打的副本和期望的助战截图，放在脚本的同级目录下，可以参考`/exp_level5.png`和`/molgan-1.png`。
+  ![quest](https://github.com/JKrith/fgo-bot/blob/main/exp_level5.png?raw=true)
   
-  ![friend](https://github.com/will7101/fgo-bot/blob/master/friend_qp.png?raw=true)
+  ![friend](https://github.com/JKrith/fgo-bot/blob/main/molgan-1.png?raw=true)
   
   注意：尽量截取更多的信息，但不要超出可点击的范围。
 
 - 将游戏置于进入任务前的界面，例如下图。
 
-  ![how to run](https://github.com/JKrith/fgo-bot/blob/master/how_to_run.png)
+  ![how to run](https://github.com/JKrith/fgo-bot/blob/main/how_to_run.png?raw=true)
 
 ## 使用教程
 
@@ -67,7 +67,13 @@ python3 setup.py install
 
 使用（从左往右）第`servant`个从者的第`skill`个技能，施放对象为第`obj`个从者（如果是指向性）。
 
-如果`reinforce`**不**为`None`，则执行以下的判断和操作：`reinforceOrNot = True`表示使用强化技能（库库尔坎消耗暴击星 / 水妖高的宝具单体化），`reinforceOrNot = False`表示使用技能但不执行强化。如果`reinforce`为`None`，则跳过以上的判断。`reinforce`默认为`None`，对于库库和水妖高之外的从者，直接使用默认值即可
+关于`reinforceOrNot`的设置，视技能的情况来决定:
+
+- 如果是普通的技能，不需要特地设置这个参数（脚本自动使用默认值）
+- 如果是可强化的，比如库库尔坎消耗暴击星 / 水妖高的宝具单体化，并且你想要强化，设置`reinforceOrNot = True`
+- 如果是可强化的但你不想强化，设`reinforce = False`
+
+如果技能有对敌单体的效果，请改用下面的`BattleBot.use_skill_enemy`。
 
 #### `BattleBot.use_master_skill(skill, obj=None, obj2=None)`
 
@@ -75,11 +81,29 @@ python3 setup.py install
 
 如果使用换人技能，还需要指定`obj2`作为被换上的从者。注意`obj2`需要在`4~6`之间。例如`obj=3,obj2=4`代表使用换人技能，交换第3（场上第3）和第4（场下第1）个。
 
-#### `BattleBot.attack(cards)`
+如果技能有对敌单体的效果，请改用下面的`BattleBot.use_master_skill_enemy`。
 
-选取指令卡并攻击。
+#### `BattleBot.use_spell(obj)`
 
-`cards`必须是三个元素的`list`，元素可以是6~9的整数，也可以是字符串。其中`6~8`表示从左往右的宝具卡，`9`表示任意的平A卡，脚本将从未选卡中选出最靠左的一张，字符串表示希望优先选取的指令卡（找不到时按`9`的情况处理）。
+使用令咒，为第`obj`个从者充能。目前只支持令咒的充能用法。
+
+#### `BattleBot.use_master_skill_enemy(skill, enemy=3)`
+
+对从左到右第`enemy`个敌人，使用第`skill`个衣服技能。
+
+#### `BattleBot.use_skill_enemy(servant, skill, enemy=3)`
+
+对从左到右第`enemy`个敌人，使用第`skill`个从者技能。
+
+#### `BattleBot.attack(cards, enemy=3)`
+
+目标第`enemy`个敌人（从左到右），选取指令卡并攻击。
+
+`cards`必须是三个元素的`list`，元素可以是6~9的整数，也可以是字符串:
+
+- `6~8`表示从左往右的宝具卡
+- `9`表示任意的平A卡，脚本将从未选卡中选出最靠左的一张
+- 字符串表示希望优先选取的指令卡（找不到时按`9`的情况处理）
 
 需要提前将指令卡截图为“xxxx.png”放在脚本的同级目录下。
 
@@ -92,6 +116,16 @@ python3 setup.py install
 脚本识别出错时，请尝试裁剪你的截图。留意截图中是否包含不必要的信息，比如指令卡截图中最好不要包含Buff、纹章图标，除非你真的需要它们。
 
 ## 更新日志
+
+### 2024.10.17
+
+1. 新增使用令咒充能、对敌单体技能的API
+2. 现在脚本会自动用`attack([9,9,9])`填充`xjbd_handlers`，对补刀没有要求的话，不必再为每个回合手动指定补刀打法
+
+### 2024.10.13
+
+1. 适配任意的屏幕分辨率。现在`device`通过`adb shell wm size`获取屏幕分辨率，并计算缩放倍率。截取游戏屏幕时会调用`cv2.resize()`压缩到1280x720，输出单击和滑动时会将坐标缩放到游戏屏幕的分辨率。
+2. 连接设备的时机提前到实例化`device`时，这是为了在`bot`和`device`初始化时获取屏幕分辨率。现在用户实例化`bot`时要提供本地端口。
 
 ### 2024.10.8
 

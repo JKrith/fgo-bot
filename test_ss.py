@@ -8,7 +8,7 @@ from fgobot import bot
 import logging
 
 # 指定日志的输出等级（DEBUG / INFO / WARNING / ERROR）
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # 实例化一个bot
 bot = bot.BattleBot(
@@ -17,11 +17,11 @@ bot = bot.BattleBot(
     quest='exp_level5.png',
 
     #助战的职介 all / saber / archer / lancer / rider / assassin / berserker / extra
-    friend_class = 'all',
+    friend_class = bot.BERSERKER,
     
     # 需要的助战截图为'friend_qp.png'，放在这个文件的同一级目录下
     # 如果可以接受的助战有多个，可以传入一个list，例如：friend=['friend1.png', 'friend2.png]
-    friend=['kkrk.png'],
+    friend=['molgan-1.png','molgan-3.png'],
 
     # AP策略为：当体力耗尽时，优先吃银苹果，再吃金苹果
     # 可选项为  rainbow_apple, gold_apple, silver_apple, red_copper_apple, bronze_apple
@@ -45,21 +45,28 @@ bot = bot.BattleBot(
 s = bot.use_skill
 m = bot.use_master_skill
 a = bot.attack_old
-ss = bot.use_skill_reinforce
+c = bot.use_spell
+se=bot.use_skill_Enemy
+me=bot.use_master_skill_Enemy
 
+################################
 # 编队 
 Arc = 2
-Kyskp = 1
-Kkrk = 3
+Rin = 1
+King = 3
 
 # 第一面的打法
 @bot.at_stage(1)
 def stage_1():
     
     # s(1, 2)表示使用1号从者的技能2
-    s(Kyskp, 2, 3)
-    ss(Kkrk, 1, reinforceOrNot= True)
-    ss(Kkrk, 3, reinforceOrNot= False)
+    # c(1)
+    se(Arc, 2, 3)
+    se(Arc, 1, 3)
+    se(Arc, 3, 3)
+    se(King, 2, 1)
+    se(King, 3, 3)
+    se(King, 1, 2)
     # (a[6, 1, 2])表示出卡顺序为：6号卡（1号从者宝具卡），1号卡，2号卡
     a([3, 1, 2])
 
@@ -68,8 +75,9 @@ def stage_1():
 def stage_2():
     
     # m(2, 1)表示使用御主技能2，对象为1号从者
-    ss(Kkrk, 2, 1, reinforceOrNot= True)
-
+    me(3, 2)
+    me(1, 1)
+    me(2, 3)
     a([3, 1, 2])
 
 
