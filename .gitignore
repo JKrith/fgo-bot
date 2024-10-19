@@ -54,6 +54,12 @@ fgobot/__pycache__/
 /Samaa_level85
 /.vscode
 /test/
+
+# Type #
+########
+*.spec
+*.exe
+
 # File #
 ########
 /desktop.ini

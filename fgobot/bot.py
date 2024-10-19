@@ -5,12 +5,11 @@ Game auto-playing bot.
 import logging
 
 from functools import partial
-from typing import Dict, Any, Callable
+from typing import Dict, Callable
 from . import device
 import json
 from pathlib import Path
 from typing import Tuple, List, Union, Literal
-from random import randint
 
 logger = logging.getLogger('bot')
 

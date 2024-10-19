@@ -1,0 +1,109 @@
+{ "quest_start":[840, 560],
+  "apple":{
+    "rainbow_apple":{
+      "x":375,
+      "y":180
+    },
+    "gold_apple":{
+      "x":375,
+      "y":330
+    },
+    "silver_apple":{
+      "x":375,
+      "y":480
+    }
+  },
+  "all":{
+    "x":  90,
+    "y":  126
+  },
+  "support_class_distance": 67,
+  "refresh_friends": {
+    "x": 930,
+    "y": 128
+  },
+  "refresh_friends_yes":{
+    "x":846,
+    "y":560
+  },
+  "attack": {
+    "x": 1135,
+    "y": 600,
+    "w": 100,
+    "h": 100
+  },
+  "next_step":{
+    "x":1100,
+    "y":640
+  },
+  "skill": {
+    "x": 73,
+    "y": 573
+  },
+  "skill_distance": 94,
+  "servant_distance": 319,
+  "master_skill_menu": {
+    "x": 1195,
+    "y": 312,
+    "w": 50,
+    "h": 50
+  },
+  "master_skill": {
+    "x": 905,
+    "y": 310,
+    "w": 50,
+    "h": 50
+  },
+  "master_skill_distance": 90,
+  "choose_object": {
+    "x": 330,
+    "y": 320
+  },
+  "choose_object_distance": 318,
+  "enemy":{
+    "x":131,
+    "y":204
+  },
+  "enemy_distance": 148,
+  "skill_reinforce":{
+    "yes": [961, 426],
+    "no": [644, 423]
+  },
+  "card":{
+    "x": 77,
+    "y": 433,
+    "w": 100,
+    "h": 100
+  },
+  "noble_card":{
+    "x": 363,
+    "y": 142,
+    "w": 100,
+    "h": 100
+  },
+  "normal_card_distance": 256,
+  "noble_card_distance":230,
+  "change":{
+    "x":137,
+    "y":348,
+    "w":100,
+    "h":100
+  },
+  "change_distance": 200,
+  "spell":{
+    "x":1063,
+    "y":75
+  },
+  "spell_np":{
+    "x":640,
+    "y":360
+  },
+  "spell_decide":{
+    "x":820,
+    "y": 430
+  },
+  "swipe": {
+    "friend": [600, 602, 600, 260],
+    "quest": [960, 588, 960, 400]
+  }
+}
