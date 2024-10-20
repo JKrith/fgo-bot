@@ -48,7 +48,7 @@ autom4te.cache
 build/
 dist/
 fgo_bot.egg-info/
-fgobot/__pycache__/
+__pycache__/
 /QP_bot/
 /QP_paper_bot/
 /Samaa_level85
