@@ -21,10 +21,10 @@ ApplicationWindow {
     }
 
     menuBar: MenuBar{
-        
+        height: 20
     }
     footer: ToolBar{
-
+        height: 20
     }
     Image {
         anchors.centerIn: parent
@@ -36,7 +36,7 @@ ApplicationWindow {
     }
 
     Rectangle{id: leftFrame
-        width: parent.width *2 /5 - 10
+        width: parent.width *2 /5 + 40
         height: 640
         color: baseWinBg 
         anchors.verticalCenter: parent.verticalCenter 
@@ -52,8 +52,7 @@ ApplicationWindow {
                                             'quest threshold',
                                             'friend threshold',
                                             'port' ]
-        Grid{
-            id: userTable
+        Grid{id: userTable
             rows: 8
             columns: 2
             anchors.centerIn: parent 
@@ -64,44 +63,78 @@ ApplicationWindow {
             bottomPadding: 90
             columnSpacing: 50
             rowSpacing: 30
-            width: parent.width*2 /3 -10
+            width: parent.width*2 /3 -30
             flow: Grid.TopToBottom
             
-            Repeater{
-                id: tableHeader
+            Repeater{id: tableHeader
                 model:  8
                 property int index : 0
                 Label{
+                    width: 200
                     text: leftFrame.tableHeaderArray[index]
                     font.pixelSize: baseFontSize
                     horizontalAlignment: Text.AlignRight
                     clip: true
                 }
             }
-            Repeater{
-                id: tableEntry
-                model: 8
-                Rectangle{
-                    width:200; height: 30
-                    border.width: 2
-                    color: 'whitesmoke'
-                    radius: 5 
-                    TextInput{
-                        anchors.fill: parent 
-                        anchors.margins: 5
-                        text: "Text Input 1"
-                        color:'gray' 
-                        clip: true
+            Repeater{ id: tableEntry
+                model: 6
+                TextField{
+                    height: 35
+                    topInset: 5
+                    placeholderText: "Text Input 1"
+                    placeholderTextColor:'gray' 
+                    clip: true
+
+                    background: Rectangle{
+                        anchors.fill: parent
+                        border.width: 0
+                        color: 'whitesmoke'
+                        radius: 5
                     }
+                    
                 }
+            }
+            MyTextField{
+                id: friendThreasholdEntry
+                validator: DoubleValidator {
+                    notation: DoubleValidator.StandardNotation	
+                    bottom: 0.00
+                    top: 0.99
+                    decimals: 2
+                }
+            }
+            TextField{
+                id: portEntry
+                height: 35
+                topInset: 5
+                placeholderText: "Your IP Port"
+                placeholderTextColor:'gray' 
+                clip: true
+
+                background: Rectangle{
+                    anchors.fill: parent
+                    border.width: 0
+                    color: 'whitesmoke'
+                    radius: 5
+                }
+                //inputMask: '000.000.000.000;_'
+                validator: DoubleValidator {
+                        bottom: 0.00
+                        top: 0.99
+                        decimals: 2
+                    }
             }
         }
         Button{
-            text: "BBB set"
+            text: "BBB Set"
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 30
             width: parent.width -40
+            onClicked: {
+                BBB.setup()
+            }
         }
     }
     Rectangle{id: rightFrame
@@ -110,8 +143,6 @@ ApplicationWindow {
         anchors.verticalCenter: parent.verticalCenter 
         anchors.left: leftFrame.right
         anchors.leftMargin: 30 
-        anchors.right: rightBar 
-        anchors.rightMargin: 30 
         color: baseWinBg
 
         Button{

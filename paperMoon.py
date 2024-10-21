@@ -10,10 +10,10 @@ import subprocess
 
 from fgobot import bot
 
-class BBB(QObject):
+class BBB():
 
     def __init__(self, parent=...):
-        super().__init__()
+        #super().__init__()
 
         self.masterCommand={}
 
@@ -21,16 +21,17 @@ class BBB(QObject):
     def setup(self):
         #
         if bool('args is enough'):
-            self.boringBattleBot = bot.BattleBot(
-                self.masterCommand[''],
-                self.masterCommand[''],
-                self.masterCommand[''],
-                self.masterCommand[''],
-                self.masterCommand[''],
-                self.masterCommand[''],
-                self.masterCommand[''],
-                self.masterCommand['']
-            )
+            print()
+            #self.boringBattleBot = bot.BattleBot(
+            #    self.masterCommand[''],
+            #    self.masterCommand[''],
+            #    self.masterCommand[''],
+            #    self.masterCommand[''],
+            #    self.masterCommand[''],
+            #    self.masterCommand[''],
+            #    self.masterCommand[''],
+            #    self.masterCommand['']
+            #)
         else:
             pass
     @pyqtSlot()
